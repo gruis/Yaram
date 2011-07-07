@@ -1,0 +1,34 @@
+# Include plugins
+require 'autotest/fsevent'
+$: << File.dirname(__FILE__) + "/spec/"
+
+# Specs can indicate which file modifications should cause them to run by including a magic comment:
+# autotest_on use, pool-use, memoryloader
+specconcerns = Dir["spec/**/*_spec.rb"].inject({}) do |specs, f|
+  contents = IO.read(f)
+  if (concern = contents.split("\n").find{|l| l.start_with?("# autotest_on ") })
+    concern.split("# autotest_on ",2)[-1].split(",").map{|c| c.strip }.each do |lib|
+      (specs[lib] ||= []) << f
+    end # do  |lib|    
+  end
+  specs
+end # do  |f|
+
+# TBD: http://szeryf.wordpress.com/2007/07/30/way-beyond-cool-autotest-growl-doomguy/
+Autotest.add_hook(:initialize) do |at|
+  %w{.git .DS_Store ._* vendor}.each { |exception| at.add_exception(exception) }
+  at.add_exception %r{^\.git}  # ignore Version Control System
+  at.add_exception %r{^./tmp}  # ignore temp files, lest autotest will run again, and again...
+  at.add_mapping(%r%^lib/(.*)\.rb$%, true) do |_, m|
+    begin
+      filename = m[1].split("/")[-1]
+      specs_to_run = Dir["spec/**/#{filename}_spec.rb"] | (specconcerns[filename] || [])
+    rescue Exception => e
+      puts e
+      puts e.backtrace
+      raise e
+    end # begin
+    specs_to_run    
+  end
+  false
+end
