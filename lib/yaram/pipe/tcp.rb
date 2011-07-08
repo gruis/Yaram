@@ -2,11 +2,8 @@ require "socket"
 
 module Yaram
   class Pipe
-    class Tcp
+    class Tcp < Pipe
       
-      class << self
-      end # << self 
-           
-    end # class::Tcp
+    end # class::Tcp < Pipe
   end # class::Pipe
 end # module::Yaram

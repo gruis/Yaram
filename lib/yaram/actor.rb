@@ -47,23 +47,13 @@ module Yaram
     class << self
       # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
       def start(klass, opts = {})
-        opts = {:log => nil, :pipe => IO }.merge(opts.is_a?(Hash) ? opts : {})
-        
-        child_read, parent_write = opts[:pipe].pipe # IO.pipe
-        parent_read, child_write = opts[:pipe].pipe # IO.pipe
-        [child_write, child_read, parent_read, parent_write].each do |io|
-          if defined? Fcntl::F_GETFL
-            io.fcntl(Fcntl::F_SETFL, io.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK)
-          else
-            io.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
-          end # defined? Fcntl::F_GETFL
-        end # do  |io|
+        opts = {:log => nil, :pipe => ::Yaram::Pipe::Memory }.merge(opts.is_a?(Hash) ? opts : {})
+        pipe = opts[:pipe].new
         
         pid = Process.fork do
           at_exit { puts "#{$0} terminating" }
           begin
-            parent_write.close
-            parent_read.close
+            pipe.connect(:actor)
             $0      = "yaram_#{klass.to_s.downcase.split("::")[-1]}"
             
             if opts[:log] == false
@@ -78,18 +68,16 @@ module Yaram
               STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
             end # opts[:log] == false
             
-            klass.new.send(:subscribe, child_read, child_write)
+            klass.new.send(:subscribe, pipe)
           ensure
-            child_read.close
-            child_write.close
+            pipe.close
           end # begin
           Process.exit
         end # Process.fork
         
         raise StartError, "unable to fork actor" if pid == -1
         
-        child_read.close
-        child_write.close
+        pipe.connect
         
         at_exit do
           begin
@@ -100,7 +88,7 @@ module Yaram
         end # at_exit
 
         #puts "#{klass} is running in process #{pid}"
-        [pid, parent_read, parent_write]
+        [pid, pipe]
       end # start
     end # class::self
 
@@ -128,7 +116,7 @@ module Yaram
       
       raise ArgumentError, "klass '#{klass}' must be an instantiatable class" unless klass.is_a?(Class)
       @actorklass      = klass
-      @tpid, @in, @out = Yaram::Actor.start(@actorklass, opts)
+      @tpid, @pipe = Yaram::Actor.start(@actorklass, opts)
       @tpid
     end # prepare
     
@@ -138,7 +126,7 @@ module Yaram
     # @todo raise an execption if @out is closed on tracker process is down
     def publish(msg)
       begin
-        @out.write("#{Ox.dump(msg)}]]>]]>")
+        @pipe.write("#{Ox.dump(msg)}]]>]]>")
       rescue Errno::EPIPE => e
         @tpid, @in, @out = Yaram::Actor.start(@actorklass)
         raise ActorRestarted, "#{@actorklass} process was automatically restarted; resend message(s) manually"
@@ -151,9 +139,9 @@ module Yaram
     # @return
     def get(timeout = 1)
       begin
-        return if IO.select([@in], nil, nil, timeout).nil?
+        return if @pipe.select(timeout).nil?
         msgs = ""
-        true while ((msgs += @in.readpartial(4096))[-6..-1] != "]]>]]>")
+        true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
         # @todo apply context ids to messages - pull off the reply with the same context id and
         #       leave the rest for now, just assume that the last message is the one we want.
         Ox.load(msgs.split("]]>]]>").pop, :mode => :object)
@@ -183,15 +171,14 @@ module Yaram
     # @param [IO] input the source of messages
     # @param [IO] output where to send any replies
     # Does not return
-    def subscribe(input, output)
-      @out = output
-      @in  = input
+    def subscribe(pipe)
+      @pipe = pipe
       
       loop do
         msgs = ""
         begin
-          IO.select([input], nil, nil, 0)
-          true while (msgs += input.readpartial(4096))[-6 .. -1] != "]]>]]>"
+          @pipe.select(0)
+          true while (msgs += @pipe.readpartial(4096))[-6 .. -1] != "]]>]]>"
           msgs = msgs.split("]]>]]>")
           while (msg = msgs.shift) do
             begin

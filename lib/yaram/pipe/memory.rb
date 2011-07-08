@@ -1,11 +1,12 @@
 module Yaram
   class Pipe
-    class Memory < Abstract
-      class << self
-        def open
-          IO.pipe
-        end # open
-      end # << self
-    end # class::Memory < Abstract
+    class Memory < Pipe
+
+      def initialize
+        super(*(eps = [*IO.pipe, *IO.pipe]))
+        @ios = [ [eps[0], eps[3]], [eps[2], eps[1]] ]
+      end
+
+    end # class::Memory < Pipe
   end # class::Pipe
 end # module::Yaram
