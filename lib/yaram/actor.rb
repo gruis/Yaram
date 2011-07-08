@@ -4,6 +4,46 @@ module Yaram
   # @todo trap Ctrl-C and stop actor
   module Actor
 
+    # Send a message asynchronously
+    def !(meth, *args)
+      publish([meth, *args])
+    end 
+    
+    # Send a message and wait for a reply
+    def sync(meth, *args)
+      request([meth, *args])
+    end
+    
+    # If a request results in the actor restarting then resend the last request.
+    # This is currently not correct behavior because the msg that caused the actor
+    # to crash was msg N-1 not N. We will loose one message instead of two, but we
+    # want to loose zero.
+    # @return
+    def recover(times = 1)
+      begin
+        yield
+      rescue Yaram::ActorRestarted => e
+        times -= 1
+        times > -1 ? retry : raise(e)
+      end # begin
+    end # retry(times = 1)
+    
+    # Stop the actor and start it again.
+    # The actor's current message queue will be written to a log file.
+    # @return
+    def restart
+      stop
+      @tpid, @in, @out = Yaram::Actor.start(@actorklass)
+    end # restart
+    
+    def stop
+      begin
+        Process.getpgid(@tpid)
+        Process.kill(:TERM, @tpid)
+      rescue Errno::ESRCH => e
+      end # begin
+    end # close
+    
     class << self
       # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
       def start(klass, opts = {})
@@ -63,22 +103,7 @@ module Yaram
         [pid, parent_read, parent_write]
       end # start
     end # class::self
-    
-    # Stop the actor and start it again.
-    # The actor's current message queue will be written to a log file.
-    # @return
-    def restart
-      stop
-      @tpid, @in, @out = Yaram::Actor.start(@actorklass)
-    end # restart
-    
-    def stop
-      begin
-        Process.getpgid(@tpid)
-        Process.kill(:TERM, @tpid)
-      rescue Errno::ESRCH => e
-      end # begin
-    end # close
+
     
     
     private
@@ -127,13 +152,16 @@ module Yaram
     def get(timeout = 1)
       begin
         return if IO.select([@in], nil, nil, timeout).nil?
-        msg = ""
-        # @todo apply context ids to messages - pull off the reply with the same context id and leave the rest
-        true while ((msg += @in.readpartial(4096))[-6..-1] != "]]>]]>")
+        msgs = ""
+        true while ((msgs += @in.readpartial(4096))[-6..-1] != "]]>]]>")
+        # @todo apply context ids to messages - pull off the reply with the same context id and
+        #       leave the rest for now, just assume that the last message is the one we want.
+        Ox.load(msgs.split("]]>]]>").pop, :mode => :object)
+      rescue EncodingError => e
+        raise e.extend(::Yaram::Error)
       rescue Exception => e
         raise e.extend(::Yaram::Error)
       end # begin
-      Ox.load(msg[0..-7], :mode => :object)
     end # get_msg
     
     # Send a message and wait for a response
@@ -148,7 +176,7 @@ module Yaram
         get(timeout)
       end # synchronize do 
     end # send(msg, timeout = 1)
-    
+
     # Subscribe to an input stream.
     # If a block is provided all decoded messages will be passed to it. Otherwise 
     # a local method will be called based on the message received.
@@ -171,7 +199,11 @@ module Yaram
                 yield(Ox.load(msg, :mode => :object))
               else
                 meth, *args = Ox.load(msg, :mode => :object)
-                raise ArgumentError, "'#{meth.inspect}' must be a String or Symobl" unless meth.is_a?(String) || meth.is_a?(Symbol)
+                unless (meth.is_a?(String) && !meth.empty?) || meth.is_a?(Symbol)
+                  #raise ArgumentError.new("'#{meth.inspect}' must be a String or Symobl")
+                  reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
+                  next
+                end
                 send(meth, *args)
               end # block_given?
             rescue Exception => e
@@ -214,10 +246,11 @@ module Yaram
     class Simple < Base
       def initialize(klass = nil, opts = {})
         prepare(klass, opts)
-      end # initialize(klass = nil, opts = {})
+      end 
+      
       def method_missing(meth, *args)
-        request([meth, *args])
-      end # method_missing(meth, *args)
+        self.!(meth, *args)
+      end 
     end # class::Simple < Base
   end # module::Actor
 end # module::Yaram
