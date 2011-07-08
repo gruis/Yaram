@@ -64,7 +64,7 @@ module Yaram
           begin
             parent_write.close
             parent_read.close
-            $0      = "herd_#{klass.to_s.downcase.split("::")[-1]}"
+            $0      = "yaram_#{klass.to_s.downcase.split("::")[-1]}"
             
             if opts[:log] == false
               STDOUT.reopen "/dev/null"
@@ -158,7 +158,7 @@ module Yaram
         #       leave the rest for now, just assume that the last message is the one we want.
         Ox.load(msgs.split("]]>]]>").pop, :mode => :object)
       rescue EncodingError => e
-        raise e.extend(::Yaram::Error)
+        raise e.extend(::Yaram::Error)#.add_data(msgs)
       rescue Exception => e
         raise e.extend(::Yaram::Error)
       end # begin
