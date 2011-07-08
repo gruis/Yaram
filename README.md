@@ -10,7 +10,7 @@ A second important property is that all communications happen by means of messag
 
 Each actor runs concurrently with other actors: it can be seen as a small independently running process.
 
-[Concurrency in Erlang & Scala: The Actor Model - Ruben Vermeersch"][1]
+["Concurrency in Erlang & Scala: The Actor Model - Ruben Vermeersch"][1]
 
 An actor is a computational entity that, in response to a message it receives, can concurrently:
 
