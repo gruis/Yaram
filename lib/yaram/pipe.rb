@@ -1,4 +1,4 @@
-require "yaram/pipe/memory"
+require "yaram/pipe/unix"
 require "yaram/pipe/udp"
 require "yaram/pipe/tcp"
 

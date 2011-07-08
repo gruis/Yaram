@@ -47,7 +47,7 @@ module Yaram
     class << self
       # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
       def start(klass, opts = {})
-        opts = {:log => nil, :pipe => ::Yaram::Pipe::Memory }.merge(opts.is_a?(Hash) ? opts : {})
+        opts = {:log => nil, :pipe => ::Yaram::Pipe::Unix }.merge(opts.is_a?(Hash) ? opts : {})
         pipe = opts[:pipe].new
         
         pid = Process.fork do

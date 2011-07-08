@@ -11,7 +11,7 @@ describe Yaram do
 
 
   it "should work with memory pipes" do
-    actor = Yaram::Actor::Simple.new(Yaram::Test::Actor, :log => false, :pipe => ::Yaram::Pipe::Memory)
+    actor = Yaram::Actor::Simple.new(Yaram::Test::Actor, :log => false, :pipe => ::Yaram::Pipe::Unix)
     actor.sync(:status).should == :up
   end # it should work with memory pipes  
 
