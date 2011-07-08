@@ -17,7 +17,7 @@ module Yaram
     def connect(side = :actor)
       raise StartError, "constructor for #{self.class} did not set @ios" unless @ios.is_a?(Array)
       raise StartError, "#{self}#connect cannot be called twice" if :already_called == @ios
-      @read_io, @write_io = *(:client == side ? @ios.pop : @ios.shift)
+      @read_io, @write_io = (:client == side ? @ios.pop : @ios.shift)
       @ios.shift.each { |io| io.close }
       @ios = :already_called
     end

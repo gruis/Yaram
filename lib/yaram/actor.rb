@@ -53,7 +53,7 @@ module Yaram
         pid = Process.fork do
           at_exit { puts "#{$0} terminating" }
           begin
-            pipe.connect(:actor)
+            pipe.connect(:client)
             $0      = "yaram_#{klass.to_s.downcase.split("::")[-1]}"
             
             if opts[:log] == false
@@ -67,7 +67,7 @@ module Yaram
               STDOUT.reopen "#{$0}.#{ts}.#{Process.pid}.stdout"
               STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
             end # opts[:log] == false
-            
+           
             klass.new.send(:subscribe, pipe)
           ensure
             pipe.close
@@ -173,7 +173,6 @@ module Yaram
     # Does not return
     def subscribe(pipe)
       @pipe = pipe
-      
       loop do
         msgs = ""
         begin
