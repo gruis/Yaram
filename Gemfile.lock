@@ -16,7 +16,7 @@ GEM
     autotest-growl (0.2.9)
     changelog (0.8)
     diff-lcs (1.1.2)
-    ox (1.0.3)
+    ox (1.1.1)
     rspec (2.2.0)
       rspec-core (~> 2.2)
       rspec-expectations (~> 2.2)
@@ -40,7 +40,7 @@ DEPENDENCIES
   autotest-fsevent
   autotest-growl
   changelog
-  ox
+  ox (~> 1.1.1)
   rspec (~> 2.2.0)
   simplecov
   thor
