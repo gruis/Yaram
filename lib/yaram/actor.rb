@@ -137,9 +137,10 @@ module Yaram
     # Retrieve a message.
     # Is not thread-safe; you need to synchronize with the lock before calling.
     # @return
-    def get(timeout = 1)
+    def get(opts = {})
+      opts = { :timeout => 1, :def => nil }.merge(opts)
       begin
-        return if @pipe.select(timeout).nil?
+        return opts[:def] if @pipe.select(opts[:timeout]).nil?
         msgs = ""
         true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
         # @todo apply context ids to messages - pull off the reply with the same context id and
@@ -158,12 +159,12 @@ module Yaram
     #
     # @todo ensure that the reply is for the request: context ids?
     # there is nothing preventing the actor from publishing unsollicited events
-    def request(msg, timeout = 1)
+    def request(msg, opts = {})
       @lock.synchronize do
         publish(msg)
-        get(timeout)
+        get(opts)
       end # synchronize do 
-    end # send(msg, timeout = 1)
+    end # send(msg, opts = {})
 
     # Subscribe to an input stream.
     # If a block is provided all decoded messages will be passed to it. Otherwise 
