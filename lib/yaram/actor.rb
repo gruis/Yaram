@@ -47,8 +47,8 @@ module Yaram
     class << self
       # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
       def start(klass, opts = {})
-        opts = {:log => nil, :pipe => ::Yaram::Pipe::Unix }.merge(opts.is_a?(Hash) ? opts : {})
-        pipe = opts[:pipe].new
+        opts = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
+        pipe = Yaram::Pipe.make_pipe(opts[:pipe])
         
         pid = Process.fork do
           at_exit { puts "#{$0} terminating" }
@@ -127,7 +127,7 @@ module Yaram
     # @todo raise an execption if @out is closed on tracker process is down
     def publish(msg)
       begin
-        @pipe.write("#{Ox.dump(msg)}]]>]]>")
+        @pipe.write("#{Yaram.encoder.dump(msg)}]]>]]>")
       rescue Errno::EPIPE => e
         @tpid, @in, @out = Yaram::Actor.start(@actorklass)
         raise ActorRestarted, "#{@actorklass} process was automatically restarted; resend message(s) manually"
@@ -159,7 +159,7 @@ module Yaram
       return @msgs if @pipe.select(timeout).nil?
       msgs = ""
       true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
-      (@msgs += msgs.split("]]>]]>").map{|o| Ox.load(o, :mode => :object) })
+      (@msgs += msgs.split("]]>]]>").map{|o| Yaram.encoder.load(o) })
     end # messages
     
     # Send a message and wait for a response
@@ -192,9 +192,9 @@ module Yaram
           while (msg = msgs.shift) do
             begin
               if block_given?
-                yield(Ox.load(msg, :mode => :object))
+                yield(Yaram.encoder.load(msg))
               else
-                meth, *args = Ox.load(msg, :mode => :object)
+                meth, *args = Yaram.encoder.load(msg)
                 unless (meth.is_a?(String) && !meth.empty?) || meth.is_a?(Symbol)
                   #raise ArgumentError.new("'#{meth.inspect}' must be a String or Symobl")
                   reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
@@ -203,13 +203,17 @@ module Yaram
                 send(meth, *args)
               end # block_given?
             rescue Exception => e
-              puts "=-=-=-=-=-=-= processing failure =-=-=-=-=-=-=\nfailed for message:\n#{msg}"
+              puts "=-=-=-=-=-=-= processing failure =-=-=-=-=-=-="
+              puts "failed for message:"
+              puts "#{msg}"
               raise e
             end # begin
           end # do  |msg|
           
         rescue Exception => e
-          puts "=-=-=-=-=-=-= message queue =-=-=-=-=-=-=\n#{msgs.is_a?(Array) ? msgs.join("\n") : msgs}\n=-=-=-=-=-=-= message queue end =-=-=-=-=-=-="
+          puts "=-=-=-=-=-=-= message queue =-=-=-=-=-=-="
+          puts "#{msgs.is_a?(Array) ? msgs.join("\n") : msgs}"
+          puts "=-=-=-=-=-=-= message queue end =-=-=-=-=-=-="
           raise e.extend(::Yaram::Error)
         end # begin
       end # loop do

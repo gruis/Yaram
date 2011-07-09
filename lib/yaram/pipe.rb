@@ -4,6 +4,7 @@ require "yaram/pipe/tcp"
 
 module Yaram
   class Pipe
+    
     def initialize(*ios)
       ios.each do |io|
         if defined? Fcntl::F_GETFL
@@ -38,6 +39,25 @@ module Yaram
       @read_io.close if @read_io.respond_to?(:close)
       @write_io.close if @read_io.respond_to?(:close)
     end
+    
+    class << self
+      # Creates a pipe or returns one that is provided.
+      # @param [Class, Yaram::Pipe, nil] pipe if Class then it will be instantiated; if an  instance of Yaram::Pipe then
+      #                                       pipe will be returned; if nil then a Yaram::Pipe::Unix will be returned
+      # @return [Yaram::Pipe]
+      # @raise [ArgumentError] if Class does not inherit from Yaram::Pipe, or if pipe is not a Yaram::Pipe or nil
+      def make_pipe(pipe = nil)
+        case pipe
+        when nil then Yaram::Pipe::Unix.new
+        when Yaram::Pipe then pipe
+        when Class
+          raise ArgumentError, "pipe '#{pipe}' must inherit from Yaram::Pipe" unless pipe < Yaram::Pipe
+          pipe.new
+        else
+          raise ArgumentError "pipe '#{pipe}' is not a recognized Yaram::Pipe, or Yaram::Pipe class"
+        end # case pipe
+      end # make_pipe
+    end # << self
     
   end # class::Pipe
 end # module::Yaram

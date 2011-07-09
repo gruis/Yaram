@@ -1,4 +1,5 @@
 require "yaram"
+require 'benchmark'
 
 module Yaram::Test
 
@@ -10,8 +11,8 @@ module Yaram::Test
 
   class MultiReplyActor < ::Yaram::Actor::Base
     def status
-      reply("incorrect response")
       reply(:up)
+      reply("incorrect response")
     end # status
   end # class::MultiReplyActor
 
@@ -32,3 +33,20 @@ module Yaram::Test
     
   end # module::RSpec
 end # module::Yaram::Test
+
+
+RSpec::Matchers.define :take_less_than do |n|
+  chain :seconds do; end
+  match do |block|
+    @elapsed = Benchmark.realtime do
+      block.call
+    end
+    @elapsed <= n
+  end # |block|
+  failure_message_for_should do |block|
+    "expected to take less than #{n}, but it took #{@elapsed}"
+  end #  |block|
+  failure_message_for_should_not do |block|
+    "expected to take more than #{n}, but it took #{@elapsed}"
+  end #  |block|
+end # |n|
