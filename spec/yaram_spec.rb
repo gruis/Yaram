@@ -11,7 +11,7 @@ describe Yaram do
 
 
   it "should work with memory pipes" do
-    actor = Yaram::Actor::Simple.new(Yaram::Test::Actor, :log => false, :pipe => ::Yaram::Pipe::Unix)
+    actor = Yaram::Actor::Simple.new(Yaram::Test::Actor, :log => false)
     actor.sync(:status).should == :up
   end # it should work with memory pipes  
 
@@ -30,7 +30,8 @@ describe Yaram do
     cnt = 10000
     cnt.times { counter.!(:inc, 1) }
     counter.sync(:value).should == cnt
-  end # it should http://ruben.savanne.be/articles/concurrency-in-erlang-scala  
+  end # it should http://ruben.savanne.be/articles/concurrency-in-erlang-scala
+  
   describe "performance and reliablity" do
     before(:each) { @counter = Yaram::Actor::Simple.new(Yaram::Test::Counter, :log => false) }
     after(:each) { @counter.stop }
@@ -40,5 +41,12 @@ describe Yaram do
         @counter.sync(:value).should == cnt
       end # it should support #{}  
     end #  |cnt|
+    
+    it "should return responses to requests even if other messages are in the queue" do
+      actor = Yaram::Actor::Simple.new(Yaram::Test::MultiReplyActor, :log => false)
+      actor.sync(:status).should == :up
+      actor.send(:messages).should == []
+    end # it should return responses to requests even if other messages are in the queue  
   end # "performance and reliablity"
+  
 end # describe Yaram

@@ -8,6 +8,13 @@ module Yaram::Test
     end # status
   end # class::Actor
 
+  class MultiReplyActor < ::Yaram::Actor::Base
+    def status
+      reply("incorrect response")
+      reply(:up)
+    end # status
+  end # class::MultiReplyActor
+
   class Counter < ::Yaram::Actor::Base
     def initialize
       super

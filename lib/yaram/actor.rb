@@ -107,6 +107,7 @@ module Yaram
     # @return
     def prepare(klass = nil, opts = {})
       @lock = Mutex.new
+      @msgs = []
       
       if klass.nil?
         # We are the actor process
@@ -140,18 +141,26 @@ module Yaram
     def get(opts = {})
       opts = { :timeout => 1, :def => nil }.merge(opts)
       begin
-        return opts[:def] if @pipe.select(opts[:timeout]).nil?
-        msgs = ""
-        true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
+        messages(opts[:timeout])
+        return opts[:def] if @msgs.empty?
         # @todo apply context ids to messages - pull off the reply with the same context id and
         #       leave the rest for now, just assume that the last message is the one we want.
-        Ox.load(msgs.split("]]>]]>").pop, :mode => :object)
+        @msgs.pop
       rescue EncodingError => e
         raise e.extend(::Yaram::Error)#.add_data(msgs)
       rescue Exception => e
         raise e.extend(::Yaram::Error)
       end # begin
     end # get_msg
+    
+    # Retrieve any raw messages that are waiting to be processed.
+    # @return [Array] messages
+    def messages(timeout = 0)
+      return @msgs if @pipe.select(timeout).nil?
+      msgs = ""
+      true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
+      (@msgs += msgs.split("]]>]]>").map{|o| Ox.load(o, :mode => :object) })
+    end # messages
     
     # Send a message and wait for a response
     # Sychrnozises with the lock, so it's thread-safe.
