@@ -7,7 +7,7 @@ require "rbconfig"
 gem "yaram", :path => File.expand_path("..", __FILE__)
 
 group :default do
-  gem "ox", "~>1.1.1"#, :git => "https://github.com/ohler55/ox/"
+  gem "ox", "~>1.2.2" # < 1.2.2 had a GC error
 end # :default do 
 
 gem "thor"
