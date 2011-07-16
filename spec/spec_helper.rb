@@ -11,8 +11,9 @@ module Yaram::Test
 
   class MultiReplyActor < ::Yaram::Actor::Base
     def status
+      1000.times { publish("incorrect response") }
       reply(:up)
-      reply("incorrect response")
+      publish("incorrect response")
     end # status
   end # class::MultiReplyActor
 

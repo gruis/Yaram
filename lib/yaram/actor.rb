@@ -107,7 +107,8 @@ module Yaram
     # @return
     def prepare(klass = nil, opts = {})
       @lock = Mutex.new
-      @msgs = []
+      @msgs = {}
+      Message.gen_context_prefix
       
       if klass.nil?
         # We are the actor process
@@ -127,13 +128,16 @@ module Yaram
     # @todo raise an execption if @out is closed on tracker process is down
     def publish(msg)
       begin
-        @pipe.write("#{Yaram.encoder.dump(msg)}]]>]]>")
+        @pipe.write("#{Yaram.encoder.dump(msg.is_a?(Message) ? msg : Message.new(msg))}]]>]]>")
       rescue Errno::EPIPE => e
         @tpid, @in, @out = Yaram::Actor.start(@actorklass)
         raise ActorRestarted, "#{@actorklass} process was automatically restarted; resend message(s) manually"
       end # begin
     end # publish(*msg)
-    alias :reply :publish
+    
+    def reply(msg)
+      publish(Message.new(msg, Message.context))
+    end # reply
     
     # Retrieve a message.
     # Is not thread-safe; you need to synchronize with the lock before calling.
@@ -141,11 +145,12 @@ module Yaram
     def get(opts = {})
       opts = { :timeout => 1, :def => nil }.merge(opts)
       begin
-        messages(opts[:timeout])
-        return opts[:def] if @msgs.empty?
-        # @todo apply context ids to messages - pull off the reply with the same context id and
-        #       leave the rest for now, just assume that the last message is the one we want.
-        @msgs.pop
+        waituntil = Time.new.to_i + opts[:timeout]
+        while Time.new.to_i <= waituntil && (@msgs[Message.context] ||= []).empty?
+          messages(opts[:timeout])
+        end # Time.new.to_i <= waituntil
+        return opts[:def] if (@msgs[Message.context] ||= []).empty?
+        return @msgs[Message.context].pop.content
       rescue EncodingError => e
         raise e.extend(::Yaram::Error)#.add_data(msgs)
       rescue Exception => e
@@ -159,7 +164,10 @@ module Yaram
       return @msgs if @pipe.select(timeout).nil?
       msgs = ""
       true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
-      (@msgs += msgs.split("]]>]]>").map{|o| Yaram.encoder.load(o) })
+      msgs.split("]]>]]>")
+          .map{|o| Yaram.encoder.load(o) }
+          .each {|m| (@msgs[m.context] ||= []) << m }
+      @msgs
     end # messages
     
     # Send a message and wait for a response
@@ -170,8 +178,10 @@ module Yaram
     # there is nothing preventing the actor from publishing unsollicited events
     def request(msg, opts = {})
       @lock.synchronize do
-        publish(msg)
-        get(opts)
+        Message.in_context do |cid|
+          publish(Message.new(msg, cid))
+          get(opts)
+        end #  |cid|
       end # synchronize do 
     end # send(msg, opts = {})
 
@@ -194,13 +204,16 @@ module Yaram
               if block_given?
                 yield(Yaram.encoder.load(msg))
               else
-                meth, *args = Yaram.encoder.load(msg)
-                unless (meth.is_a?(String) && !meth.empty?) || meth.is_a?(Symbol)
-                  #raise ArgumentError.new("'#{meth.inspect}' must be a String or Symobl")
-                  reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
-                  next
-                end
-                send(meth, *args)
+                message = Yaram.encoder.load(msg)
+                Message.in_context(message.context) do 
+                  meth, *args = message.content
+                  unless (meth.is_a?(String) && !meth.empty?) || meth.is_a?(Symbol)
+                    #raise ArgumentError.new("'#{meth.inspect}' must be a String or Symobl")
+                    reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
+                    next
+                  end
+                  send(meth, *args)
+                end # Message.in_context(message.context) do 
               end # block_given?
             rescue Exception => e
               puts "=-=-=-=-=-=-= processing failure =-=-=-=-=-=-="
