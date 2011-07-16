@@ -117,7 +117,7 @@ module Yaram
       end # klass.nil?
       
       raise ArgumentError, "klass '#{klass}' must be an instantiatable class" unless klass.is_a?(Class)
-      @actorklass      = klass
+      @actorklass  = klass
       @tpid, @pipe = Yaram::Actor.start(@actorklass, opts)
       @tpid
     end # prepare
@@ -202,7 +202,7 @@ module Yaram
           while (msg = msgs.shift) do
             begin
               if block_given?
-                yield(Yaram.encoder.load(msg))
+                yield(Yaram.encoder.load(msg).content)
               else
                 message = Yaram.encoder.load(msg)
                 Message.in_context(message.context) do 

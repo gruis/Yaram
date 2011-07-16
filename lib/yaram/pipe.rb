@@ -18,8 +18,8 @@ module Yaram
     def connect(side = :actor)
       raise StartError, "constructor for #{self.class} did not set @ios" unless @ios.is_a?(Array)
       raise StartError, "#{self}#connect cannot be called twice" if :already_called == @ios
-      @read_io, @write_io = (:client == side ? @ios.pop : @ios.shift)
-      @ios.shift.each { |io| io.close }
+      @read_io, @write_io, @address = (:client == side ? @ios.pop : @ios.shift)
+      @ios.shift[0..1].each { |io| io.close }
       @ios = :already_called
     end
     
@@ -39,6 +39,10 @@ module Yaram
       @read_io.close if @read_io.respond_to?(:close)
       @write_io.close if @read_io.respond_to?(:close)
     end
+    
+    def address
+      raise NotImplementedError
+    end # address
     
     class << self
       # Creates a pipe or returns one that is provided.

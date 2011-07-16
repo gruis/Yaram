@@ -14,6 +14,7 @@ describe Yaram do
     it "should execute 175,000 requests per second" do
       expect {
         175000.times { @counter.recover(1) { @counter.!(:inc, 1) } }
+        #175000.times { @counter.publish(Yaram::Message.new([:inc, 1])) }
       }.to take_less_than(1.0).seconds
     end # it should take less than x seconds  
 

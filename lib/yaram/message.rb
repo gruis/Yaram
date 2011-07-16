@@ -15,21 +15,14 @@ module Yaram
       def in_context(cid = nil)
         return unless block_given?
         @@contexts << @context unless @context.nil?
+        # @@idx += adds 0.7 s for 175,000
         @context = cid.nil? ? "#{@@uuid}-#{@@idx += 1}" : cid
-
-        # 2.37100 s for 175,000
+        # 1.339507818222046 s for 175,000
         begin
           yield(@context)
         ensure
           @context = @@contexts.pop
-        end # begin
-        
-        # 2.33797 s for 175,000 
-        #r = yield(@context)
-        #@context = contexts.pop
-        #r
-        
-        #yield(@context).tap{ @@contexts.pop }
+        end # begin        
       end # in_context
     end # << self
     
