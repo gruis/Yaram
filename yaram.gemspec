@@ -19,5 +19,5 @@ require "rubygems"
   # s.extensions = "ext/extconf.rb"
 
   # s.add_dependency "otherproject", "~> 1.2"
-  s.add_dependency "ox"
+  s.add_dependency "uuid"
 end

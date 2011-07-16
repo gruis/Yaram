@@ -41,7 +41,7 @@ RSpec::Matchers.define :take_less_than do |n|
     @elapsed = Benchmark.realtime do
       block.call
     end
-    @elapsed <= n
+    (@elapsed).tap{|t| puts "time: #{t}"} <= n
   end # |block|
   failure_message_for_should do |block|
     "expected to take less than #{n}, but it took #{@elapsed}"
