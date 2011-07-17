@@ -1,6 +1,33 @@
 require File.join(File.dirname(__FILE__), "spec_helper")
 
 describe Yaram do
+  describe "startup" do
+    # Spawning styles
+    # c = Counter.new(54323)
+    #   c.extend(Yaram::Actor)
+    #   c.publish(:inc, 1)
+    #   c.request(:value)
+    #   c.inc(1)
+    #   c.!(:inc, 1)
+    #
+    # c = Yaram::Actor.connect("udp://127.0.0.1:4889")
+    #   c.publish(:inc, 1)
+    #   c.request(:value)
+    #
+    # c = Yaram::Actor.start(Counter, :log => false)
+    #   c.publish(:inc, 1)
+    #   c.request(:value)
+    #
+    # c = Yaram::Actor.start(Counter.new(54323), :log => false)
+    #   c.publish(:inc, 1)
+    #   c.request(:value)
+    it "should be able to start itself" do
+      actor = Yaram::Test::Counter.new(601).spawn(:log => false)
+      #actor = Yaram::Test::Counter.spawn(:log => false)
+      actor.publish([:inc, 1])
+      actor.request([:value]).should == 1
+    end # it should be able to start itself  
+  end # "startup"
 
   it "should comply with http://ruben.savanne.be/articles/concurrency-in-erlang-scala" do
     counter = Yaram::Actor::Simple.new(Yaram::Test::Counter, :log => false)

@@ -2,7 +2,7 @@ require File.join(File.dirname(__FILE__), "spec_helper")
 
 describe Yaram do
   describe "performance" do
-    before(:each) { @counter = Yaram::Actor::Simple.new(Yaram::Test::Counter, :log => false) }
+    before(:each) { @counter = Yaram::Actor::Simple.new(Yaram::Test::Counter, :log => false, :pipe => Yaram::Pipe::Fifo) }
     after(:each) { @counter.stop }
     [100, 1000, 10000, 100000, 1000000].each do |cnt|
       it "should support #{cnt} requests" do

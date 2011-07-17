@@ -26,6 +26,13 @@ describe Yaram do
       actor.sync(:address).should_not be actor.address
     end # it should provide an address for external actors
   end # "udp pipes"
+  
+  describe "fifo pipe" do
+    it "should work with fifo pipes" do
+      actor = Yaram::Actor::Simple.new(Yaram::Test::Actor, :log => false, :pipe => Yaram::Pipe::Fifo)
+      actor.sync(:status).should == :up
+    end # it should work with fifo pipes    
+  end # "fifo pipe"
 
   it "should work with tcp pipes" do
     actor = Yaram::Actor::Simple.new(Yaram::Test::Actor, :log => false, :pipe => Yaram::Pipe::Tcp)
