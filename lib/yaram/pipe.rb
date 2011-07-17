@@ -1,6 +1,7 @@
 require "yaram/pipe/unix"
 require "yaram/pipe/udp"
 require "yaram/pipe/tcp"
+require "yaram/pipe/fifo"
 
 module Yaram
   class Pipe
@@ -28,9 +29,17 @@ module Yaram
       @read_io.readpartial(4096)
     end
     
+    #def write(msg)
+    #  @write_io.write(msg)
+    #end
     def write(msg)
-      @write_io.write(msg)
-    end
+      begin
+        result = @write_io.write_nonblock(msg)
+      rescue IO::WaitWritable, Errno::EINTR
+        IO.select(nil, [@write_io])
+        retry
+      end
+    end # write(msg)
     
     def select(timeout = 1)
       IO.select([@read_io], nil, nil, timeout)

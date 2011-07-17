@@ -18,4 +18,5 @@ module Yaram
   # supervisor process will restart it automatically, but the caller
   # must resend manually.
   class ActorRestarted < StandardError; end
+  
 end # module::Yaram

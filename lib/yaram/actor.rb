@@ -47,8 +47,28 @@ module Yaram
       rescue Errno::ESRCH => e
       end # begin
     end # close
-    
+        
     class << self
+      
+      # @return
+      def extended(c)
+        if c.is_a?(Class)
+          # do something
+          return
+        end # c.is_a?(Class)
+        # spawn as an actor
+      end # extended(c)
+      
+      # @return
+      def wrap(obj, opts = {})
+        opts = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
+        pipe = Yaram::Pipe.make_pipe(opts[:pipe])
+        #....
+        obj.extend(self)
+        obj.send(:prepare)
+        obj.send(:subscribe)
+      end # wrap(obj, opts = {})
+      
       # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
       def start(klass, opts = {})
         opts = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
@@ -85,9 +105,11 @@ module Yaram
         
         at_exit do
           begin
-            Process.getpgid(pid)
+            Process.getpgid(pid) # raises ESRCH if process id already closed
             Process.kill(:TERM, pid) 
           rescue Errno::ESRCH => e
+          ensure
+            pipe.close
           end # begin
         end # at_exit
 
@@ -273,12 +295,16 @@ module Yaram
     
     # Allows for inheritence of Yaram::Actor
     class Base
-      include Actor 
+      include Actor      
       def initialize
         prepare
       end # initialize
     end # class::Base
-    
+    module Unobtrusive
+      def spawn(opts = {})
+        Actor.start(self, opts)
+      end # spawn(opts = {})
+    end # module::Unobtrusive
     class Simple < Base
       def initialize(klass = nil, opts = {})
         prepare(klass, opts)

@@ -9,6 +9,7 @@ end # begin
 require "yaram/version"
 require "yaram/error"
 require "yaram/message"
+require "yaram/session"
 require "yaram/actor"
 require "yaram/pipe"
 
