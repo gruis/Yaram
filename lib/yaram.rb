@@ -12,6 +12,7 @@ require "yaram/message"
 require "yaram/session"
 require "yaram/actor"
 require "yaram/pipe"
+require "yaram/mailbox"
 
 module Yaram
   class << self

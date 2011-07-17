@@ -72,17 +72,16 @@ module Yaram
       # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
       def start(klass, opts = {})
         opts = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
-        pipe = Yaram::Pipe.make_pipe(opts[:pipe])
+        mbox = Yaram::Mailbox.build(opts[:mbox]).bind
         
         pid = Process.fork do
           at_exit { puts "#{$0} terminating" }
           begin
-            pipe.connect(:client)
             $0      = "yaram_#{klass.to_s.downcase.split("::")[-1]}"
             
             if opts[:log] == false
-              STDOUT.reopen "/dev/null"
-              STDERR.reopen "/dev/null"
+              #STDOUT.reopen "/dev/null"
+              #STDERR.reopen "/dev/null"
             elsif opts[:log].is_a?(String)
               STDOUT.reopen opts[:log] + "stdout"
               STDERR.reopen opts[:log] + "stderr"
@@ -92,16 +91,16 @@ module Yaram
               STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
             end # opts[:log] == false
            
-            klass.new.send(:subscribe, pipe)
+            klass.new.send(:subscribe, mbox)
           ensure
-            pipe.close
+            mbox.close
           end # begin
           Process.exit
         end # Process.fork
         
         raise StartError, "unable to fork actor" if pid == -1
         
-        pipe.connect
+        mbox.connect(mbox.address)
         
         at_exit do
           begin
@@ -109,12 +108,12 @@ module Yaram
             Process.kill(:TERM, pid) 
           rescue Errno::ESRCH => e
           ensure
-            pipe.close
+            mbox.close
           end # begin
         end # at_exit
 
         #puts "#{klass} is running in process #{pid}"
-        [pid, pipe]
+        [pid, mbox]
       end # start
     end # class::self
 
@@ -208,7 +207,7 @@ module Yaram
     def messages(timeout = 0)
       return @msgs if @pipe.select(timeout).nil?
       msgs = ""
-      true while ((msgs += @pipe.readpartial(4096))[-6..-1] != "]]>]]>")
+      true while ((msgs += @pipe.read(4096))[-6..-1] != "]]>]]>")
       msgs.split("]]>]]>")
           .map{|o| Yaram.encoder.load(o) }
           .each {|m| (@msgs[m.context] ||= []) << m }
@@ -242,7 +241,7 @@ module Yaram
         msgs = ""
         begin
           @pipe.select(0)
-          true while (msgs += @pipe.readpartial(4096))[-6 .. -1] != "]]>]]>"
+          true while (msgs += @pipe.read(4096))[-6 .. -1] != "]]>]]>"
           msgs = msgs.split("]]>]]>")
           while (msg = msgs.shift) do
             begin

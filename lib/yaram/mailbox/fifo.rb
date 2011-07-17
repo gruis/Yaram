@@ -4,6 +4,7 @@ module Yaram
     class Fifo < Mailbox
       
       def bind(addr = nil)
+        close if connected?
         addr        = "fifo:///tmp/actors/#{Process.pid}-#{UUID.generate}.fifo"  if addr.nil?
         @address    = addr
         uri         = URI.parse(addr)
@@ -15,10 +16,11 @@ module Yaram
         @io      = open(uri.path, "r+")
         @io.sync = true
         @bound   = true
-        self
+        super()
       end # bind(addr = nil)
 
       def connect(addr)
+        close if bound?
         uri = URI.parse(addr)
         raise ArgumentError.new("address '#{addr}' scheme must be fifo").extend(::Yaram::Error) unless uri.scheme == "fifo"
         raise ArgumentError.new("fifo '#{uri.path}' does not exist") unless File.exist?(uri.path)
@@ -26,7 +28,7 @@ module Yaram
         @io      = open(uri.path, "w+")
         @io.sync = true
         @address = addr
-        self
+        super()
       end # connect(addr)
       
       def close

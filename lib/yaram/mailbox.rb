@@ -1,6 +1,8 @@
 require "uri"
 require "yaram/mailbox/udp"
 require "yaram/mailbox/fifo"
+require "yaram/mailbox/tcp"
+require "yaram/mailbox/unix"
 
 module Yaram
   class Mailbox
@@ -19,6 +21,18 @@ module Yaram
         end # do  |io|
         ios.length == 1 ? ios[0] : ios
       end # prepare(*ios)
+
+      def build(mbox = nil)
+        case mbox
+        when nil then Yaram::Mailbox::Udp.new
+        when Yaram::Mailbox then mbox
+        when Class
+          raise ArgumentError, "mailbox '#{mbox}' must inherit from Yaram::Mailbox" unless mbox < Yaram::Mailbox
+          mbox.new
+        else
+          raise ArgumentError "mailbox '#{mbox}' is not a recognized Yaram::Mailbox, or Yaram::Mailbox class"
+        end # case pipe
+      end # build
     end # << self
     
     
@@ -27,13 +41,17 @@ module Yaram
     # Bind the mailbox so that it can receive messages
     # @return
     def bind
-      raise NotImplementedError
+      Yaram::Mailbox.prepare(@io)
+      @bound = true
+      self
     end # bind
     
     # Connect to another mailbox in preparation for sending messages
     # @return
     def connect
-      raise NotImplementedError
+      Yaram::Mailbox.prepare(@io)
+      @connected = true
+      self
     end # connect
     
     def write(msg)
@@ -48,7 +66,7 @@ module Yaram
     def read(bytes = 4096)
       @io.readpartial(bytes)
     end # read(bytes)
-
+    
     def select(timeout = 1)
       IO.select([@io], nil, nil, timeout)
     end
@@ -60,6 +78,15 @@ module Yaram
     def to_io
       @io
     end # to_io
+    
+    def bound?
+      @bound == true
+    end # bound?
+    
+    # @return
+    def connected?
+      @connected == true
+    end # connected?
     
     def prepare
       Yaram::Mailblox.prepare(@io)
