@@ -1,8 +1,10 @@
 require "socket"
+require "yaram/pipe/ip"
 
 module Yaram
   class Pipe
     class Tcp < Pipe
+      include Ip
       class << self
         def port
           @port ||= 4897

@@ -3,7 +3,11 @@ module Yaram
   # @todo setup the supervisor to restart the actor if it crashes
   # @todo trap Ctrl-C and stop actor
   module Actor
-
+    
+    def address
+      @pipe.address
+    end # address
+    
     # Send a message asynchronously
     def !(meth, *args)
       publish([meth, *args])
@@ -127,6 +131,8 @@ module Yaram
     # @param [Object] msg the thing to publish
     # @todo raise an execption if @out is closed on tracker process is down
     def publish(msg)
+      #@indents ||= []
+      #puts "#{@indents.join("")}#{Process.pid} publish(#{msg.inspect})"
       begin
         @pipe.write("#{Yaram.encoder.dump(msg.is_a?(Message) ? msg : Message.new(msg))}]]>]]>")
       rescue Errno::EPIPE => e
@@ -135,8 +141,25 @@ module Yaram
       end # begin
     end # publish(*msg)
     
-    def reply(msg)
-      publish(Message.new(msg, Message.context))
+    # Reply to a received message, or ensure that a reply will be sent.
+    # If a block is given reply will keep track of any replies sent during the life of the block. If no
+    # reply is sent then the result of the block will be sent as a final reply.
+    # If a block is not given then a reply (msg) will be sent.
+    # @param [Object] msg the reply to send
+    # @return [Object] msg
+    def reply(msg = nil)
+      #@indents ||= []
+      #puts "#{@indents.join("")}#{Process.pid} reply(#{msg.inspect})"
+      if block_given?
+        #@indents << "   "
+        @replied = false # probably not the right approach
+        implicit = yield
+        publish(Message.new(implicit, Message.context)) unless @replied
+      else
+        publish(Message.new(msg, Message.context))
+        @replied = true  
+      end # block_given?
+      msg
     end # reply
     
     # Retrieve a message.
@@ -179,7 +202,7 @@ module Yaram
     def request(msg, opts = {})
       @lock.synchronize do
         Message.in_context do |cid|
-          publish(Message.new(msg, cid))
+          publish(Message.new(msg, cid).reply(address))
           get(opts)
         end #  |cid|
       end # synchronize do 
@@ -212,7 +235,7 @@ module Yaram
                     reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
                     next
                   end
-                  send(meth, *args)
+                  message.reply? ? (reply { send(meth, *args) }) : send(meth, *args)
                 end # Message.in_context(message.context) do 
               end # block_given?
             rescue Exception => e

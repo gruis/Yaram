@@ -4,6 +4,7 @@ require "yaram/pipe/tcp"
 
 module Yaram
   class Pipe
+    attr_reader :address
     
     def initialize(*ios)
       ios.each do |io|
@@ -38,11 +39,7 @@ module Yaram
     def close
       @read_io.close if @read_io.respond_to?(:close)
       @write_io.close if @read_io.respond_to?(:close)
-    end
-    
-    def address
-      raise NotImplementedError
-    end # address
+    end    
     
     class << self
       # Creates a pipe or returns one that is provided.

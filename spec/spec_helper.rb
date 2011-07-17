@@ -12,10 +12,21 @@ module Yaram::Test
   class MultiReplyActor < ::Yaram::Actor::Base
     def status
       1000.times { publish("incorrect response") }
-      reply(:up)
       publish("incorrect response")
+      :up
     end # status
   end # class::MultiReplyActor
+  class ExplicitReplyActor < ::Yaram::Actor::Base
+    def status
+      reply(:explicit)
+      :implicit
+    end # status
+  end # class::ExplicitReplyActor < ::Yaram::Actor::Base
+  class ImplicitReplyActor < ::Yaram::Actor::Base
+    def status
+      :implicit
+    end # status
+  end # class::ImplicitReplyActor < ::Yaram::Actor::Base
 
   class Counter < ::Yaram::Actor::Base
     def initialize
@@ -26,7 +37,7 @@ module Yaram::Test
       @count += amt
     end # inc(amt)
     def value
-      reply(@count)
+      @count
     end # value
   end # class::Counter < Yaram::Actor::Base
   

@@ -33,5 +33,16 @@ module Yaram
       @context    = context
       @reply_to   = reply_to
     end
+    
+    def reply?
+      @reply
+    end # reply?
+    
+    def reply(to = nil)
+      @reply    = true
+      @reply_to = to
+      self
+    end # reqreply
+    
   end # class::Message
 end # module::Yaram
