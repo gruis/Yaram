@@ -1,166 +1,105 @@
+require "yaram/actor/proxy"
+require "yaram/actor/async"
+require "yaram/actor/sync"
+require "yaram/actor/base"
+require "yaram/actor/control"
+
+
 module Yaram
   # @todo Add an #rpc and #rpc_noblock method
   # @todo setup the supervisor to restart the actor if it crashes
   # @todo trap Ctrl-C and stop actor
   module Actor
-    
-    def address
-      @pipe.address
-    end # address
-    
-    # Send a message asynchronously
-    def !(meth, *args)
-      publish([meth, *args])
-    end 
-    
-    # Send a message and wait for a reply
-    def sync(meth, *args)
-      request([meth, *args])
-    end
-    
-    # If a request results in the actor restarting then resend the last request.
-    # This is currently not correct behavior because the msg that caused the actor
-    # to crash was msg N-1 not N. We will loose one message instead of two, but we
-    # want to loose zero.
-    # @return
-    def recover(times = 1)
-      begin
-        yield
-      rescue Yaram::ActorRestarted => e
-        times -= 1
-        times > -1 ? retry : raise(e)
-      end # begin
-    end # retry(times = 1)
-    
-    # Stop the actor and start it again.
-    # The actor's current message queue will be written to a log file.
-    # @return
-    def restart
-      stop
-      @tpid, @in, @out = Yaram::Actor.start(@actorklass)
-    end # restart
-    
-    def stop
-      begin
-        Process.getpgid(@tpid)
-        Process.kill(:TERM, @tpid)
-      rescue Errno::ESRCH => e
-      end # begin
-    end # close
-        
-    class << self
-      
-      # @return
-      def extended(c)
-        if c.is_a?(Class)
-          # do something
-          return
-        end # c.is_a?(Class)
-        # spawn as an actor
-      end # extended(c)
-      
-      # @return
-      def wrap(obj, opts = {})
-        opts = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
-        pipe = Yaram::Pipe.make_pipe(opts[:pipe])
-        #....
-        obj.extend(self)
-        obj.send(:prepare)
-        obj.send(:subscribe)
-      end # wrap(obj, opts = {})
-      
-      # Start an instance of Class that includes Yaram::Actor, or inherits from Yaram::Actor::Base
-      def start(klass, opts = {})
-        opts = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
-        mbox = Yaram::Mailbox.build(opts[:mbox]).bind
-        
-        pid = Process.fork do
-          at_exit { puts "#{$0} terminating" }
-          begin
-            $0      = "yaram_#{klass.to_s.downcase.split("::")[-1]}"
-            
-            if opts[:log] == false
-              #STDOUT.reopen "/dev/null"
-              #STDERR.reopen "/dev/null"
-            elsif opts[:log].is_a?(String)
-              STDOUT.reopen opts[:log] + "stdout"
-              STDERR.reopen opts[:log] + "stderr"
-            else
-              ts      = Time.new.to_i
-              STDOUT.reopen "#{$0}.#{ts}.#{Process.pid}.stdout"
-              STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
-            end # opts[:log] == false
-           
-            klass.new.send(:subscribe, mbox)
-          ensure
-            mbox.close
-          end # begin
-          Process.exit
-        end # Process.fork
-        
-        raise StartError, "unable to fork actor" if pid == -1
-        
-        mbox.connect(mbox.address)
-        
-        at_exit do
-          begin
-            Process.getpgid(pid) # raises ESRCH if process id already closed
-            Process.kill(:TERM, pid) 
-          rescue Errno::ESRCH => e
-          ensure
-            mbox.close
-          end # begin
-        end # at_exit
 
-        #puts "#{klass} is running in process #{pid}"
-        [pid, mbox]
+    # The process id of the process that was spawned to run this object
+    attr_reader :spid
+    # The address (URL) where this actor can be reached
+    def address
+      @inbox.address
+    end # address
+
+    # Spawn this object off into another process
+    # @param [Hash] opts spawn options
+    # @option opts [false, String, nil] :log
+    # @option opts [Class, String, Yaram::Mailbox] :mailbox the mailbox to bind the actor to
+    def spawn(opts = {})
+      #puts "#{Process.pid} spawn(#{opts})"
+      opts  = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
+      mbox  = Yaram::Mailbox.build(opts[:mailbox]).bind
+      @connections ||= Hash.new {|hash,key| hash[key] = Mailbox.connect(key) }
+      @def_to            = []
+      @def_context       = []
+      
+      #puts "#{Process.pid} mbox: #{mbox}"
+
+      pid   = Process.fork do
+        at_exit { puts "#{$0} terminating" }
+        begin
+          $0      = "yaram_#{self.class.to_s.downcase.split("::")[-1]}"
+  
+          if opts[:log] == false
+            STDOUT.reopen "/dev/null"
+            STDERR.reopen "/dev/null"
+          elsif opts[:log].is_a?(String)
+            STDOUT.reopen opts[:log] + "stdout"
+            STDERR.reopen opts[:log] + "stderr"
+          else
+            ts      = Time.new.to_i
+            STDOUT.reopen "#{$0}.#{ts}.#{Process.pid}.stdout"
+            STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
+          end # opts[:log] == false
+
+          subscribe(mbox)
+        ensure
+          mbox.close
+        end # begin
+        Process.exit
+      end # Process.fork
+      
+      raise StartError, "unable to fork actor" if pid == -1
+      @spid = pid
+      
+      at_exit do
+        begin
+          # @todo come up with some way to unregister the kill in case #detach is caused
+          Process.getpgid(@spid) # raises ESRCH if process id already closed
+          Process.kill(:TERM, @spid) 
+        rescue Errno::ESRCH => e
+        end # begin
+      end # at_exit
+
+      mbox.unbind
+    end # spawn(opts = {})
+    
+    
+    class << self
+      # Start an actor in another process and return an Proxy object that can be used to communicate and supervise it.
+      # @param [Yaram::Actor]
+      def start(obj, opts = {})
+        Proxy.new(obj.spawn(opts))
+              .tap{|p| p.extend(Control).register(obj, p.outbox.address) }
       end # start
     end # class::self
 
     
     
     private
-
-    # Prepare an Actor for work.
-    # @lock will be created for thread synchronization.
-    #
-    # When called by the process that is creating an actor a Class must be passed in.
-    # @tpid, @in, and @out will be created
-    #
-    # When called by the process that will be the actor, no klass can be provided.
-    #
-    # @return
-    def prepare(klass = nil, opts = {})
-      @lock = Mutex.new
-      @msgs = {}
-      Message.gen_context_prefix
-      
-      if klass.nil?
-        # We are the actor process
-        @tpid = Process.ppid
-        return self
-      end # klass.nil?
-      
-      raise ArgumentError, "klass '#{klass}' must be an instantiatable class" unless klass.is_a?(Class)
-      @actorklass  = klass
-      @tpid, @pipe = Yaram::Actor.start(@actorklass, opts)
-      @tpid
-    end # prepare
     
     # Publish a message and don't wait for a response.
     # Is not thread-safe; you need to synchronize with the lock before calling.
-    # @param [Object] msg the thing to publish
-    # @todo raise an execption if @out is closed on tracker process is down
+    # @param [Message] msg the thing to publish
     def publish(msg)
       #@indents ||= []
       #puts "#{@indents.join("")}#{Process.pid} publish(#{msg.inspect})"
-      begin
-        @pipe.write("#{Yaram.encoder.dump(msg.is_a?(Message) ? msg : Message.new(msg))}]]>]]>")
-      rescue Errno::EPIPE => e
-        @tpid, @in, @out = Yaram::Actor.start(@actorklass)
-        raise ActorRestarted, "#{@actorklass} process was automatically restarted; resend message(s) manually"
-      end # begin
+      msg.from(@address)
+
+      @connections[msg.to].write("#{Yaram.encoder.dump(msg)}]]>]]>")      
     end # publish(*msg)
+    
+    # @return
+    def message(msg, to = nil)
+      publish(Message.new(msg).to(to || @def_to[-1]).context(@def_context[-1]))
+    end # message(msg, to = nil)
     
     # Reply to a received message, or ensure that a reply will be sent.
     # If a block is given reply will keep track of any replies sent during the life of the block. If no
@@ -168,33 +107,54 @@ module Yaram
     # If a block is not given then a reply (msg) will be sent.
     # @param [Object] msg the reply to send
     # @return [Object] msg
-    def reply(msg = nil)
+    def reply(msg)
       #@indents ||= []
       #puts "#{@indents.join("")}#{Process.pid} reply(#{msg.inspect})"
       if block_given?
         #@indents << "   "
         @replied = false # probably not the right approach
-        implicit = yield
-        publish(Message.new(implicit, Message.context)) unless @replied
+        yield.tap do |implicit| 
+            publish( Reply.new(implicit).context(msg.context).to(msg.reply_to) ) unless @replied
+        end
       else
-        publish(Message.new(msg, Message.context))
+        publish(Reply.new(msg, @def_context[-1]).to(@def_to[-1]))
         @replied = true  
       end # block_given?
       msg
     end # reply
     
+    # Start a session
+    # @return
+    def session(def_context, def_to = nil)
+      #puts "#{Process.pid} session(#{def_context}, #{def_to})"
+      @def_to.push(def_to)
+      @def_context.push(def_context)
+      begin
+        yield if block_given?
+      ensure
+        @def_to.pop
+        @def_context.pop
+      end # begin
+    end # session(def_to, def_context)
+    
+    
     # Retrieve a message.
     # Is not thread-safe; you need to synchronize with the lock before calling.
+    # Yaram::Actor is not optimized for get, @msgs container should be pre-sorted if get 
+    # optimization is required.
+    # @todo stop using Message.context
     # @return
     def get(opts = {})
-      opts = { :timeout => 1, :def => nil }.merge(opts)
+      opts = { :timeout => 1, :def => nil, :type => Message }.merge(opts)
+      #puts "#{Process.pid} #{self.class}#get(#{opts})"
       begin
         waituntil = Time.new.to_i + opts[:timeout]
-        while Time.new.to_i <= waituntil && (@msgs[Message.context] ||= []).empty?
+        while Time.new.to_i <= waituntil && @msgs[@def_context[-1]].select{|m| m.instance_of?(opts[:type]) }.empty?
           messages(opts[:timeout])
         end # Time.new.to_i <= waituntil
-        return opts[:def] if (@msgs[Message.context] ||= []).empty?
-        return @msgs[Message.context].pop.content
+        return opts[:def] if (@msgs[@def_context[-1]].select{|m| m.instance_of?(opts[:type])}).empty?
+        idx = @msgs[@def_context[-1]].find_index{|m| m.instance_of?(opts[:type]) }
+        return @msgs[@def_context[-1]].delete_at(idx).content
       rescue EncodingError => e
         raise e.extend(::Yaram::Error)#.add_data(msgs)
       rescue Exception => e
@@ -205,27 +165,34 @@ module Yaram
     # Retrieve any raw messages that are waiting to be processed.
     # @return [Array] messages
     def messages(timeout = 0)
-      return @msgs if @pipe.select(timeout).nil?
+      #puts "#{Process.pid} #{self.class}#messages(#{timeout})"
+      return @msgs if @inbox.select(timeout).nil?
       msgs = ""
-      true while ((msgs += @pipe.read(4096))[-6..-1] != "]]>]]>")
+      while true
+        msgs += @inbox.read
+        break if msgs[-6..-1] == "]]>]]>"
+        break if @inbox.select(0).nil?
+      end # true
       msgs.split("]]>]]>")
           .map{|o| Yaram.encoder.load(o) }
-          .each {|m| (@msgs[m.context] ||= []) << m }
+          .each {|m| @msgs[m.context].push(m) }
       @msgs
     end # messages
     
     # Send a message and wait for a response
     # Sychrnozises with the lock, so it's thread-safe.
+    # @param [Message] a message to send
     # @return [Object] the response to the message
     #
     # @todo ensure that the reply is for the request: context ids?
     # there is nothing preventing the actor from publishing unsollicited events
     def request(msg, opts = {})
       @lock.synchronize do
-        Message.in_context do |cid|
-          publish(Message.new(msg, cid).reply(address))
-          get(opts)
-        end #  |cid|
+        session((msg.context || msg.context(Message.newcontext).context), msg.to) do
+          publish(msg.reply(@address))
+          opts[:type] = Reply
+          get(opts)          
+        end # session
       end # synchronize do 
     end # send(msg, opts = {})
 
@@ -235,30 +202,39 @@ module Yaram
     # @param [IO] input the source of messages
     # @param [IO] output where to send any replies
     # Does not return
-    def subscribe(pipe)
-      @pipe = pipe
+    def subscribe(mbox)
+      #puts "#{Process.pid} subscribe(#{mbox})"
+      @inbox   = mbox
+      @address = mbox.address
+      @def_to ||= []
+      @def_context ||= []
+      
       loop do
         msgs = ""
         begin
-          @pipe.select(0)
-          true while (msgs += @pipe.read(4096))[-6 .. -1] != "]]>]]>"
+          @inbox.select(0)
+          true while (msgs += @inbox.read)[-6 .. -1] != "]]>]]>"
           msgs = msgs.split("]]>]]>")
           while (msg = msgs.shift) do
             begin
-              if block_given?
-                yield(Yaram.encoder.load(msg).content)
-              else
-                message = Yaram.encoder.load(msg)
-                Message.in_context(message.context) do 
-                  meth, *args = message.content
-                  unless (meth.is_a?(String) && !meth.empty?) || meth.is_a?(Symbol)
-                    #raise ArgumentError.new("'#{meth.inspect}' must be a String or Symobl")
-                    reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
-                    next
-                  end
-                  message.reply? ? (reply { send(meth, *args) }) : send(meth, *args)
-                end # Message.in_context(message.context) do 
-              end # block_given?
+              message = Yaram.encoder.load(msg)
+              session(message.context, message.reply_to) do
+                begin
+                  if block_given?
+                    yield(message)
+                  else
+                    meth, *args = message.content
+                    unless (meth.is_a?(String) && !meth.empty?) || meth.is_a?(Symbol)
+                      reply(ArgumentError.new"'#{meth.inspect}' must be a String or Symobl")
+                      next
+                    end
+                    message.reply? ? (reply(message) { send(meth, *args) }) : send(meth, *args)
+                  end # block_given?
+                rescue Exception => e
+                  reply(e)
+                  raise e.extend(::Yaram::Error)
+                end # begin                
+              end # session
             rescue Exception => e
               puts "=-=-=-=-=-=-= processing failure =-=-=-=-=-=-="
               puts "failed for message:"
@@ -275,43 +251,6 @@ module Yaram
         end # begin
       end # loop do
     end # subscribe(io)
-    
-    
-    # Confirms that the other side is up and capable of communication.
-    # @return
-    def require_channel
-      begin
-        Process.getpgid(@tpid)
-      rescue Errno::ESRCH => e
-        # no such process
-        raise e.extend(::Yaram::Error)
-      end # begin
-    end # require_channel
-    
-    
-    
-    public
-    
-    # Allows for inheritence of Yaram::Actor
-    class Base
-      include Actor      
-      def initialize
-        prepare
-      end # initialize
-    end # class::Base
-    module Unobtrusive
-      def spawn(opts = {})
-        Actor.start(self, opts)
-      end # spawn(opts = {})
-    end # module::Unobtrusive
-    class Simple < Base
-      def initialize(klass = nil, opts = {})
-        prepare(klass, opts)
-      end 
-      
-      def method_missing(meth, *args)
-        self.!(meth, *args)
-      end 
-    end # class::Simple < Base
+        
   end # module::Actor
 end # module::Yaram

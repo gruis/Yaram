@@ -25,8 +25,8 @@ module Yaram
       @ios = :already_called
     end
     
-    def readpartial(bytes = 4096)
-      @read_io.readpartial(4096)
+    def readpartial(bytes = 40960)
+      @read_io.readpartial(bytes)
     end
     
     #def write(msg)

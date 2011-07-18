@@ -17,7 +17,8 @@ module Yaram
       # @param [String] addr address in the form of a URI
       def bind(addr = nil)
         close if connected? || bound?
-        
+
+        addr ||= @address
         if addr.nil?
           bind_ip = "0.0.0.0"
           ip      = addresses[0]
@@ -25,6 +26,7 @@ module Yaram
           uri     = URI.parse(addr)
           raise ArgumentError.new("address '#{addr}' scheme must be udp").extend(::Yaram::Error) unless uri.scheme == "udp"
           bind_ip = uri.host
+          ip      = bind_ip == "0.0.0.0" ? addresses[0] : bind_ip
           port    = uri.port
         end # addr.nil?
         
@@ -49,7 +51,8 @@ module Yaram
         super()
       end # bind(bind_ip = nil)
       
-      def connect(addr)
+      def connect(addr = nil)
+        addr ||= @address
         close if bound? || connected?
         uri = URI.parse(addr)
         raise ArgumentError.new("address '#{addr}' scheme must be udp").extend(::Yaram::Error) unless uri.scheme == "udp"

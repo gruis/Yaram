@@ -24,19 +24,42 @@ module Yaram
 
       def build(mbox = nil)
         case mbox
-        when nil then Yaram::Mailbox::Udp.new
+        when nil then Yaram::Mailbox::Fifo.new
         when Yaram::Mailbox then mbox
         when Class
           raise ArgumentError, "mailbox '#{mbox}' must inherit from Yaram::Mailbox" unless mbox < Yaram::Mailbox
           mbox.new
+        when String
+          uri     = URI.parse(mbox)
+          type    = uri.scheme.capitalize
+          raise ArgumentError.new("mailbox '#{type}' type not found").extend(Error) unless const_defined?(type)
+          const_get(type).new(mbox)
         else
-          raise ArgumentError "mailbox '#{mbox}' is not a recognized Yaram::Mailbox, or Yaram::Mailbox class"
+          raise ArgumentError, "mailbox '#{mbox}' is not a recognized Yaram::Mailbox, or Yaram::Mailbox class"
         end # case pipe
       end # build
+      
+      # Create a Mailbox connected to the given address
+      # @return
+      def connect(addr)
+        build(addr).connect(addr)
+      end # connect(addr)
+      
     end # << self
     
     
     attr_reader :address, :io
+    
+    # Create a new mailbox
+    # @return
+    def initialize(addr = nil)
+      @address = addr if addr.is_a?(String)
+    end # initialize(addr = nil)
+    
+    # @return
+    def to_s
+      @address || super
+    end # to_s
     
     # Bind the mailbox so that it can receive messages
     # @return
@@ -56,14 +79,20 @@ module Yaram
     
     def write(msg)
       begin
-        result = @io.write_nonblock(msg)
+        @io.write_nonblock(msg)
       rescue IO::WaitWritable, Errno::EINTR
         IO.select(nil, [@io])
         retry
       end
     end # write(msg)
     
-    def read(bytes = 4096)
+    def read(bytes = 40960)
+      #begin
+      #  result = @io.read_nonblock(bytes)
+      #rescue IO::WaitReadable, Errno::EINTR
+      #  IO.select([@io], nil, nil)
+      #  retry
+      #end
       @io.readpartial(bytes)
     end # read(bytes)
     
@@ -71,9 +100,20 @@ module Yaram
       IO.select([@io], nil, nil, timeout)
     end
     
+    # Unbinds the mailbox. 
+    # Subclases should override close and add in anything necessary to cleanup the mailbox from 
+    # the system, e.g., delete a file.
+    # @return [String] the address of the mailbox that was closed
     def close
-      @io.close
+      unbind
     end
+    
+    # Close the mailbox and don't receive any messages from it
+    # @return
+    def unbind
+      @io.close
+      @address.tap{ @address = "" }
+    end # unbind
     
     def to_io
       @io

@@ -43,7 +43,9 @@ describe Yaram do
     it "should return responses to requests even if other messages are in the queue" do
       actor = Yaram::Actor::Simple.new(Yaram::Test::MultiReplyActor, :log => false)
       actor.sync(:status).should == :up
-    end # it should return responses to requests even if other messages are in the queue      
+    end # it should return responses to requests even if other messages are in the queue   
+    
+    it "should return exceptions"    
   end # "performance and reliablity"
 
 
