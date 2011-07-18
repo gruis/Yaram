@@ -18,8 +18,11 @@ module Yaram::Test
     def value
       @counter
     end # value
-    
-    # @return
+    def echo(msg)
+      msg
+    end
+    def anything(*args)
+    end # anything(*args)
     def crash
       raise "I'm stupid"
     end # crash

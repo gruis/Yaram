@@ -12,9 +12,19 @@ describe Yaram do
       end # it should support #{}
     end #  |cnt|
 
-    it "should execute 73,500 requests per second" do
+    it "should execute 98,500 requests per second" do
       expect {
-        73500.times {  @counter.!(:inc, 1)  }
+        98500.times {  @counter.publish([:inc, 1])  }
+        #
+        # 99900.times do
+        #   begin
+        #     raise ArgumentError.new("blah")
+        #   rescue Exception => e
+        #     @counter.publish([:anything, e])  
+        #   end # begin
+        # end
+        #
+        #162000.times {  @counter.publish([:inc, 1])  }
       }.to take_less_than(1.0).seconds
     end # it should take less than x seconds
 

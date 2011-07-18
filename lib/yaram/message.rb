@@ -62,6 +62,16 @@ module Yaram
       self
     end # reqreply
     
+    def eql?(other)
+      puts "#{self} == #{other}"
+      content == other.content && context == other.context && to == other.to && reply_to == other.reply_to
+    end # ==(other)
+    
+    def to_s
+      #{}"to:#{to};from:#{from};reply_to:#{reply_to};context:#{context};content:#{content}"
+      content
+    end # to_s
+    
   end # class::Message
   Message.gen_context_prefix
 end # module::Yaram

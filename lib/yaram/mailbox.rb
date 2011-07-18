@@ -87,13 +87,13 @@ module Yaram
     end # write(msg)
     
     def read(bytes = 40960)
-      #begin
-      #  result = @io.read_nonblock(bytes)
-      #rescue IO::WaitReadable, Errno::EINTR
-      #  IO.select([@io], nil, nil)
-      #  retry
-      #end
-      @io.readpartial(bytes)
+      begin
+        result = @io.read_nonblock(bytes)
+      rescue IO::WaitReadable, Errno::EINTR
+        IO.select([@io], nil, nil)
+        retry
+      end
+      #@io.readpartial(bytes)
     end # read(bytes)
     
     def select(timeout = 1)

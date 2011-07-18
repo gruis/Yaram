@@ -76,6 +76,7 @@ module Yaram
       # Start an actor in another process and return an Proxy object that can be used to communicate and supervise it.
       # @param [Yaram::Actor]
       def start(obj, opts = {})
+        obj.extend(Yaram::Actor) unless obj.is_a?(Yaram::Actor)
         Proxy.new(obj.spawn(opts))
               .tap{|p| p.extend(Control).register(obj, p.outbox.address) }
       end # start
@@ -92,8 +93,7 @@ module Yaram
       #@indents ||= []
       #puts "#{@indents.join("")}#{Process.pid} publish(#{msg.inspect})"
       msg.from(@address)
-
-      @connections[msg.to].write("#{Yaram.encoder.dump(msg)}]]>]]>")      
+      @connections[msg.to].write("#{Yaram.encoder.dump(msg)}]]>]]>")
     end # publish(*msg)
     
     # @return
