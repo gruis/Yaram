@@ -38,14 +38,13 @@ rb_yaram_mbox_mkfifo(VALUE self, VALUE name)
     return name;
 }
 
-/*#define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)*/
 /*
  *  call-seq:
  *     #write_unblocked(string)   -> integer
  *
  *  Writes the given string to <em>ios</em> using
  *  the write(2) system call. It assumes that O_NONBLOCK 
- *  is already set forthe underlying file descriptor.
+ *  is already set for the underlying file descriptor.
  *
  *  Over ~100,000 calls it is about 0.043 seconds faster.
  *
