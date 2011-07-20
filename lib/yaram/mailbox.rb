@@ -1,4 +1,5 @@
 require "uri"
+require "io/nonblock"
 require "yaram/mailbox/udp"
 require "yaram/mailbox/fifo"
 require "yaram/mailbox/tcp"
@@ -12,13 +13,7 @@ module Yaram
       # Prepare IOs for use as a Mailbox
       # @return [IO]
       def prepare(*ios)
-        ios.each do |io|
-          if defined? Fcntl::F_GETFL
-            io.fcntl(Fcntl::F_SETFL, io.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK)
-          else
-            io.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
-          end # defined? Fcntl::F_GETFL
-        end # do  |io|
+        ios.each { |io| io.nonblock = true }
         ios.length == 1 ? ios[0] : ios
       end # prepare(*ios)
 
@@ -79,7 +74,8 @@ module Yaram
     
     def write(msg)
       begin
-        @io.write_nonblock(msg)
+        #@io.write_nonblock(msg)
+        write_unblocked(@io, msg)
       rescue IO::WaitWritable, Errno::EINTR
         IO.select(nil, [@io])
         retry

@@ -1,5 +1,5 @@
 require "thread"
-require "fcntl"
+
 begin
   require "ox"
 rescue LoadError => e
@@ -7,6 +7,7 @@ rescue LoadError => e
 end # begin
 
 require "yaram/version"
+require "yaram/ext/yaram"
 require "yaram/error"
 require "yaram/message"
 require "yaram/reply"

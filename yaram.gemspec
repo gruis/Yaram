@@ -16,7 +16,7 @@ require "rubygems"
   s.executables               = Dir["bin/*"].map{|f| f.split("/")[-1] }
 
   # If you have C extensions, uncomment this line
-  # s.extensions = "ext/extconf.rb"
+  s.extensions = "ext/extconf.rb"
 
   # s.add_dependency "otherproject", "~> 1.2"
   s.add_dependency "uuid"

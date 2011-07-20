@@ -1,2 +1,5 @@
 *.stderr
 *.stdout
+*.bundle
+*.o
+Makefile

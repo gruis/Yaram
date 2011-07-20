@@ -12,7 +12,9 @@ module Yaram
         
         pdir = File.dirname(uri.path)
         Dir.mkdir(pdir) unless File.exists?(pdir)
-        system("mkfifo #{uri.path}") unless File.exists?(uri.path)
+        
+        mkfifo(uri.path) unless File.exists?(uri.path)
+        
         @io      = open(uri.path, "r+")
         @io.sync = true
         @bound   = true
@@ -23,7 +25,8 @@ module Yaram
         close if bound?
         uri = URI.parse(@address || addr)
         raise ArgumentError.new("address '#{addr}' scheme must be fifo").extend(::Yaram::Error) unless uri.scheme == "fifo"
-        system("mkfifo #{uri.path}") unless File.exists?(uri.path)
+
+        mkfifo(uri.path) unless File.exists?(uri.path)
 
         @io        = open(uri.path, "w+")
         @io.sync   = true
