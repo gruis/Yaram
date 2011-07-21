@@ -31,6 +31,34 @@ describe Yaram do
     end # it should work with fifo mailboxs    
   end # "fifo mailbox"
 
+  describe "unix domain socket mailbox" do
+    it "should work with domain sockets" do
+      actor = Yaram::Actor::Proxy.new(Yaram::Test::MCounter.new.spawn(:mailbox => Yaram::Mailbox::Unix, :log => false))
+      actor.sync(:status).should == :up      
+    end # it should work with domain sockets
+    it "should support multiple client connections" do
+      addr = Yaram::Test::MCounter.new.spawn(:mailbox => Yaram::Mailbox::Unix, :log => false)
+      c0 = Yaram::Actor::Proxy.new(addr)
+      c1 = Yaram::Actor::Proxy.new(addr)
+      c2 = Yaram::Actor::Proxy.new(addr)
+      c1.!(:inc, 1)
+      c0.sync(:status).should == :up
+      c2.!(:inc, 3)
+      c1.!(:inc, 3)
+      c2.sync(:status).should == :up
+      c1.sync(:status).should == :up
+      c0.sync(:status).should == :up
+      c0.sync(:value).should == 7
+    end # it should support multiple client connections
+    
+    it "should be fast" do
+      actor = Yaram::Actor::Proxy.new(Yaram::Test::MCounter.new.spawn(:mailbox => Yaram::Mailbox::Unix, :log => false))
+      expect {
+        100000.times { actor.!(:inc, 1) } 
+      }.to take_less_than(1).seconds
+    end # it should be fast  
+  end # "unix domain socket mailbox"
+
   it "should work with tcp mailboxes" do
     actor = Yaram::Actor::Proxy.new(Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Tcp))
     actor.sync(:status).should == :up

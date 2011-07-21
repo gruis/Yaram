@@ -60,7 +60,7 @@ module Yaram
     # @return
     def bind
       Yaram::Mailbox.prepare(@io)
-      @bound = true
+      @connected , @bound = false, true
       self
     end # bind
     
@@ -68,7 +68,7 @@ module Yaram
     # @return
     def connect
       Yaram::Mailbox.prepare(@io)
-      @connected = true
+      @connected , @bound = true, false
       self
     end # connect
     
