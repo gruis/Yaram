@@ -26,10 +26,6 @@ module Yaram
 
         @msgs = Hash.new {|hash,k| hash[k] = [] }        
         @lock = Mutex.new
-        #@msgcache ||= {}#Hash.new {|h,k| h[k] = Yaram.encoder.dump(k) }
-        #puts "#{Process.pid} #{self.class}.new(#{addr})"
-        #puts "#{Process.pid}  outbox: #{@outbox}"
-        #puts "#{Process.pid}  inbox:  #{@inbox}"
       end # initialize(addr)
       
       def request(msg)

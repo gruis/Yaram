@@ -27,21 +27,27 @@ module Yaram
         close if connected? || bound?
         addr ||= @address
         @io = redis_connection(addr)
+        puts "#{Process.pid} #{self.class}#bind subscribing"
+        puts "#{Process.pid} #{self.class}#bind sending: SUBSCRIBE #{@channel}\r\n"
         @io.write("SUBSCRIBE #{@channel}\r\n")
+        #@io.recv(4096).tap{|r| puts "#{Process.pid} #{self.class}#bind subscribe result: '#{r}'"}
+        read.tap{|r| puts "#{Process.pid} #{self.class}#bind subscribe result: '#{r}'"}
         super()
       end
       
       def read(bytes = 40960)
         puts "#{Process.pid} #{self.class}#read(#{bytes})"
-        super.split("\n")[6..-1]
-              .tap{|m| puts "#{Process.pid} #{self.class}#read - msg: #{m}"}
-              .join("\n")
-              .chomp
+        r = super.split("\r\n")
+              .tap{|m| puts "#{Process.pid} #{self.class}#read - '#{m}'"}[6..-1]
+        return nil if r.nil?      
+        r.join("\n").chomp
       end
       
       def write(msg)
         puts "#{Process.pid} #{self.class}#write(#{msg})"
-        super("PUBLISH #{@channel} \"#{msg.gsub('"', '\"')}\"")
+        super("PUBLISH #{@channel} #{msg.gsub(/\s/,"")}\r\n")
+        read # must == :0
+        msg.length
       end # write(msg)
       
       
