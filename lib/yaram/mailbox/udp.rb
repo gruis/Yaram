@@ -1,18 +1,8 @@
 module Yaram
   class Mailbox
     class Udp < Mailbox
-      include Pipe::Ip
+      include Ip
       
-      class << self
-        def port
-          @port ||= 4897
-        end # port
-        
-        def port=(num)
-          @port = num
-        end # port=(num)
-      end # << self
-
       # Bind a mailbox to recieve messages
       # @param [String] addr address in the form of a URI
       def bind(addr = nil)

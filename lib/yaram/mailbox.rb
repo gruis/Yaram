@@ -1,5 +1,7 @@
 require "uri"
 require "io/nonblock"
+require "yaram/mailbox/ip"
+require "yaram/mailbox/persistent_clients"
 require "yaram/mailbox/udp"
 require "yaram/mailbox/fifo"
 require "yaram/mailbox/tcp"

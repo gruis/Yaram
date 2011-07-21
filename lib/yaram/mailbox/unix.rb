@@ -3,6 +3,7 @@ require "socket"
 module Yaram
   class Mailbox
     class Unix < Mailbox
+      include PersistentClients
       
       # @return
       def connect(addr = nil)
@@ -14,7 +15,7 @@ module Yaram
         Dir.mkdir(pdir) unless File.exists?(pdir)
 
         @io          = UNIXSocket.new(uri.path).recv_io
-        @io.nonblock = true # seems to have no effect
+        @io.nonblock = true
         @address     = addr
         super()
       end # connect
@@ -37,33 +38,6 @@ module Yaram
         inboxes
         self
       end # bind(bind_ip = nil)
-
-      # Send a message to an inbox
-      def write(msg)
-        begin
-          # @todo unblock on connect
-          @io.write_nonblock(msg)
-        rescue IO::WaitWritable, Errno::EINTR
-          IO.select(nil, [@io])
-          retry
-        end
-      end # write(msg)
-
-      # Read a message from the first client connection that has sent data
-      # @todo round-robin between the clients.
-      # @todo don't block on the first select
-      def read(bytes = 40960)
-        begin          
-          IO.select(@inboxes, nil, nil)[0][0].read_nonblock(bytes)
-        rescue IO::WaitReadable, Errno::EINTR
-          IO.select([@inboxes], nil, nil)
-          retry
-        end
-      end # read(bytes)
-      
-      def select(timeout = 1)
-        @bound ? IO.select(inboxes, nil, nil, timeout) : IO.select(nil, [@io], nil, timeout)
-      end
       
       # @return [String] address
       def close

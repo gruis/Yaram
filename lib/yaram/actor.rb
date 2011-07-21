@@ -93,7 +93,7 @@ module Yaram
       #@indents ||= []
       #puts "#{@indents.join("")}#{Process.pid} publish(#{msg.inspect})"
       msg.from(@address)
-      @connections[msg.to].write("#{Yaram.encoder.dump(msg)}]]>]]>")
+      @connections[msg.to].write(Yaram.encoder.dump(msg) + "]]>]]>")
     end # publish(*msg)
     
     # @return
