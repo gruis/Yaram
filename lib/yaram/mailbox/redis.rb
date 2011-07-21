@@ -10,12 +10,10 @@ module Yaram
       
       # @return
       def initialize(addr = nil)
-        puts "#{Process.pid} #{self.class}#new(#{addr})"
         super(addr)
       end # initialize(addr = nil)
       
       def connect(addr = nil)
-        puts "#{Process.pid} #{self.class}#connect(#{addr})"
         addr ||= @address
         close if bound? || connected?
         @io = redis_connection(addr)
@@ -23,7 +21,6 @@ module Yaram
       end
       
       def bind(addr = nil)
-        puts "#{Process.pid} #{self.class}#bind(#{addr})"
         close if connected? || bound?
         addr ||= @address
         @io = redis_connection(addr)
@@ -33,14 +30,18 @@ module Yaram
       end
       
       def read(bytes = 40960)
-        r = super.split("\r\n")[6..-1]
+        r = super.split("\r\n")
         return nil if r.nil?      
-        r.join("\n").chomp.tap{|m| puts "#{Process.pid} #{self.class}#read - message: #{m}"}
+        # kludge !!!!!
+        r.join("\n")
+         .split("]]>]]>") # if the record seperator ever changes in Actor we'll need to change it here too!
+         .map{|m| m.strip.split("\n")[6..-1].join("\n") }
+         .join("]]>]]>") << "]]>]]>"
       end
       
       def write(msg)
         super("*3\r\n$7\r\nPUBLISH\r\n$#{@channel.size}\r\n#{@channel}\r\n$#{msg.size}\r\n#{msg}\r\n")
-        #raise Yaram::Error.new("failed to send message") unless cmd_ok?
+        raise ::Yaram::CommunicationError.new("failed to send message") unless cmd_ok?
         msg.length
       end # write(msg)
       
@@ -54,12 +55,11 @@ module Yaram
           IO.select([@io], nil, nil)
           retry
         end
-        result.chomp[-2..-1] == [":1"]
+        result.chomp[-2..-1] == ":1"
       end # cmd_ok?
       
       
       def redis_connection(addr)
-        puts "#{Process.pid} #{self.class}#redis_connection(#{addr})"
         uri = URI.parse(addr)
         raise ArgumentError.new("address '#{addr}' scheme must be redis").extend(::Yaram::Error) unless uri.scheme == "redis"
         raise ArgumentError.new("address '#{addr}' must contain a path for subscription").extend(::Yaram::Error) if uri.path.nil?

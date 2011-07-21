@@ -12,9 +12,7 @@ module Yaram
 
         uri                = URI.parse(addr)
         if uri.scheme == "redis"
-          puts "#{Process.pid}#{self.class}#new - scheme: redis; uri: #{uri}"
           uri.path = "/#{UUID.generate}"
-          puts "#{Process.pid}#{self.class}#new - uri: #{uri}"
           @inbox             = @connections[addr].class.new(uri.to_s).bind
         else
           @inbox             = @connections[addr].class.new.bind

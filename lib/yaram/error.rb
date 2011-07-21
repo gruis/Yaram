@@ -21,4 +21,6 @@ module Yaram
 
   # The actor died.
   class ActorDied < StandardError; end
+  
+  class CommunicationError < StandardError; end
 end # module::Yaram
