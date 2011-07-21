@@ -13,9 +13,9 @@ module Yaram
         pdir = File.dirname(uri.path)
         Dir.mkdir(pdir) unless File.exists?(pdir)
 
-        @io  = UNIXSocket.new(uri.path)
-
-        @address   = addr
+        @io          = UNIXSocket.new(uri.path).recv_io
+        @io.nonblock = true # seems to have no effect
+        @address     = addr
         super()
       end # connect
       
@@ -41,7 +41,8 @@ module Yaram
       # Send a message to an inbox
       def write(msg)
         begin
-          @io.send(msg, 0)
+          # @todo unblock on connect
+          @io.write_nonblock(msg)
         rescue IO::WaitWritable, Errno::EINTR
           IO.select(nil, [@io])
           retry
@@ -50,14 +51,14 @@ module Yaram
 
       # Read a message from the first client connection that has sent data
       # @todo round-robin between the clients.
+      # @todo don't block on the first select
       def read(bytes = 40960)
-        begin
-          IO.select(@inboxes, nil, nil)[0][0].recv(bytes)
+        begin          
+          IO.select(@inboxes, nil, nil)[0][0].read_nonblock(bytes)
         rescue IO::WaitReadable, Errno::EINTR
           IO.select([@inboxes], nil, nil)
           retry
         end
-        #@io.readpartial(bytes)
       end # read(bytes)
       
       def select(timeout = 1)
@@ -84,8 +85,10 @@ module Yaram
         nomoreclients = false
         until nomoreclients
           begin
-            # @socket has already been unblocked so accept should behave the same as accept_nonblock
-            @inboxes.push(@socket.accept_nonblock.tap{|s| s.nonblock = true; })
+            c   = @socket.accept_nonblock
+            r,w = IO.pipe
+            c.send_io(w)
+            @inboxes.push(r)
           rescue IO::WaitReadable, Errno::EINTR
             nomoreclients = true
           end # begin          

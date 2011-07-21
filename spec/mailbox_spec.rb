@@ -53,6 +53,8 @@ describe Yaram do
     
     it "should be fast" do
       actor = Yaram::Actor::Proxy.new(Yaram::Test::MCounter.new.spawn(:mailbox => Yaram::Mailbox::Unix, :log => false))
+      actor.!(:inc, 1) # initial connection setup takes about 0.03 seconds
+      sleep 1
       expect {
         100000.times { actor.!(:inc, 1) } 
       }.to take_less_than(1).seconds
