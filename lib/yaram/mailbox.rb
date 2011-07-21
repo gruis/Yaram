@@ -76,7 +76,6 @@ module Yaram
     end # connect
     
     def write(msg)
-      puts "#{Process.pid} #{self.class}#write(#{msg})"
       begin
         #@io.write_nonblock(msg)
         write_unblocked(@io, msg)

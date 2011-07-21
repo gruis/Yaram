@@ -27,31 +27,35 @@ module Yaram
         close if connected? || bound?
         addr ||= @address
         @io = redis_connection(addr)
-        puts "#{Process.pid} #{self.class}#bind subscribing"
-        puts "#{Process.pid} #{self.class}#bind sending: SUBSCRIBE #{@channel}\r\n"
         @io.write("SUBSCRIBE #{@channel}\r\n")
-        #@io.recv(4096).tap{|r| puts "#{Process.pid} #{self.class}#bind subscribe result: '#{r}'"}
-        read.tap{|r| puts "#{Process.pid} #{self.class}#bind subscribe result: '#{r}'"}
+        cmd_ok?
         super()
       end
       
       def read(bytes = 40960)
-        puts "#{Process.pid} #{self.class}#read(#{bytes})"
-        r = super.split("\r\n")
-              .tap{|m| puts "#{Process.pid} #{self.class}#read - '#{m}'"}[6..-1]
+        r = super.split("\r\n")[6..-1]
         return nil if r.nil?      
-        r.join("\n").chomp
+        r.join("\n").chomp.tap{|m| puts "#{Process.pid} #{self.class}#read - message: #{m}"}
       end
       
       def write(msg)
-        puts "#{Process.pid} #{self.class}#write(#{msg})"
-        super("PUBLISH #{@channel} #{msg.gsub(/\s/,"")}\r\n")
-        read # must == :0
+        super("*3\r\n$7\r\nPUBLISH\r\n$#{@channel.size}\r\n#{@channel}\r\n$#{msg.size}\r\n#{msg}\r\n")
+        #raise Yaram::Error.new("failed to send message") unless cmd_ok?
         msg.length
       end # write(msg)
       
       
       private
+      
+      def cmd_ok?
+        begin
+          result = @io.read_nonblock(40960)
+        rescue IO::WaitReadable, Errno::EINTR
+          IO.select([@io], nil, nil)
+          retry
+        end
+        result.chomp[-2..-1] == [":1"]
+      end # cmd_ok?
       
       
       def redis_connection(addr)
