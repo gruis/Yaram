@@ -46,8 +46,6 @@ module Yaram
         close if bound? || connected?
         uri = URI.parse(addr)
         raise ArgumentError.new("address '#{addr}' scheme must be udp").extend(::Yaram::Error) unless uri.scheme == "udp"
-        bind_ip  = uri.host
-        port     = uri.port
 
         @address = addr
         @io      = UDPSocket.new

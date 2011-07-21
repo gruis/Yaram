@@ -96,4 +96,11 @@ describe Yaram do
       }.to take_less_than(1).seconds
     end # it should be fast  
   end # "unix domain socket mailbox"
+  
+  describe "redis mailbox" do
+    it "should work with redis mailboxs" do
+      actor = Yaram::Actor::Proxy.new(Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}")))
+      actor.sync(:status).should == :up
+    end # it should work with redis mailboxs
+  end # "redis mailbox"
 end # describe Yaram

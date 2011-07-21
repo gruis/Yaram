@@ -9,7 +9,17 @@ module Yaram
         @connections ||= Hash.new {|hash,key| hash[key] = Mailbox.connect(key) }
         @connections[addr] = Mailbox.connect(addr)
         @outbox            = @connections[addr]
-        @inbox             = @connections[addr].class.new.bind
+
+        uri                = URI.parse(addr)
+        if uri.scheme == "redis"
+          puts "#{Process.pid}#{self.class}#new - scheme: redis; uri: #{uri}"
+          uri.path = "/#{UUID.generate}"
+          puts "#{Process.pid}#{self.class}#new - uri: #{uri}"
+          @inbox             = @connections[addr].class.new(uri.to_s).bind
+        else
+          @inbox             = @connections[addr].class.new.bind
+        end # addr.scheme == "redis"        
+
         @address           = @inbox.address
         @def_to            = []
         @def_context       = []

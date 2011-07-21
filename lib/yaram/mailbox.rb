@@ -6,6 +6,7 @@ require "yaram/mailbox/udp"
 require "yaram/mailbox/fifo"
 require "yaram/mailbox/tcp"
 require "yaram/mailbox/unix"
+require "yaram/mailbox/redis"
 
 module Yaram
   class Mailbox
@@ -91,7 +92,6 @@ module Yaram
         IO.select([@io], nil, nil)
         retry
       end
-      #@io.readpartial(bytes)
     end # read(bytes)
     
     def select(timeout = 1)

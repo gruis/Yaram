@@ -38,8 +38,8 @@ module Yaram
           $0      = "yaram_#{self.class.to_s.downcase.split("::")[-1]}"
   
           if opts[:log] == false
-            STDOUT.reopen "/dev/null"
-            STDERR.reopen "/dev/null"
+            #STDOUT.reopen "/dev/null"
+            #STDERR.reopen "/dev/null"
           elsif opts[:log].is_a?(String)
             STDOUT.reopen opts[:log] + "stdout"
             STDERR.reopen opts[:log] + "stderr"
