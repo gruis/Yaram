@@ -25,7 +25,7 @@ module Yaram
         addr ||= @address
         @io = redis_connection(addr)
         @io.write("SUBSCRIBE #{@channel}\r\n")
-        cmd_ok?
+        cmd_ok?(::Yaram::CommunicationError)
         super()
       end
       
@@ -41,21 +41,30 @@ module Yaram
       
       def write(msg)
         super("*3\r\n$7\r\nPUBLISH\r\n$#{@channel.size}\r\n#{@channel}\r\n$#{msg.size}\r\n#{msg}\r\n")
-        raise ::Yaram::CommunicationError.new("failed to send message") unless cmd_ok?
+        # Checking the response adds significant time (~19x) for each write operation
+        # cmd_ok?(::Yaram::CommunicationError)
         msg.length
       end # write(msg)
       
       
       private
       
-      def cmd_ok?
+      # Check for a success code response from the redis server
+      # @param [Exception, nil] excp the exception class to raise on error, or nil
+      # @return [true, false]
+      def cmd_ok?(excp)
         begin
           result = @io.read_nonblock(40960)
         rescue IO::WaitReadable, Errno::EINTR
           IO.select([@io], nil, nil)
           retry
         end
-        result.chomp[-2..-1] == ":1"
+        result.chomp!
+        if result[0] == "-"
+          raise excp.new("redis command failed: #{result}") unless excp.nil?
+          return false
+        end
+        true
       end # cmd_ok?
       
       
