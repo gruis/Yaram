@@ -29,14 +29,23 @@ module Yaram
         super()
       end
       
-      def read(bytes = 40960)
-        r = super.split("\r\n")
+      def read(bytes = 524288)
+        # default bytes is high to cope with redis giving us
+        # large messages. once the redis parser is written
+        # bytes should be reduced.
+        r = super(bytes).split("\r\n")
         return nil if r.nil?      
-        # kludge !!!!!
-        r.join("\n")
-         .split("]]>]]>") # if the record seperator ever changes in Actor we'll need to change it here too!
-         .map{|m| m.strip.split("\n")[6..-1].join("\n") }
-         .join("]]>]]>") << "]]>]]>"
+        begin
+          # kludge !!!!!
+          # Until this is updated to properly parse the redis wire format
+          # it will raise exceptions and/or return incomplete messages
+          r.join("\n")
+           .split("]]>]]>") # if the record seperator ever changes in Actor we'll need to change it here too!
+           .map{|m| m.strip.split("\n")[6..-1].join("\n") }
+           .join("]]>]]>") << "]]>]]>"
+        rescue Exception => e
+          raise ParseError, "unable to parse '#{r}'"
+        end # begin
       end
       
       def write(msg)
@@ -54,7 +63,7 @@ module Yaram
       # @return [true, false]
       def cmd_ok?(excp)
         begin
-          result = @io.read_nonblock(40960)
+          result = @io.read_nonblock(65536)
         rescue IO::WaitReadable, Errno::EINTR
           IO.select([@io], nil, nil)
           retry

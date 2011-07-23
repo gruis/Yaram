@@ -23,4 +23,8 @@ module Yaram
   class ActorDied < StandardError; end
   
   class CommunicationError < StandardError; end
+  
+  # A message that was receive from a third-party broker could not be 
+  # properly parsed.
+  class ParseError < StandardError; end
 end # module::Yaram

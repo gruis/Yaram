@@ -4,7 +4,7 @@ module Yaram
       # Read a message from the first client connection that has sent data
       # @todo round-robin between the clients.
       # @todo don't block on the first select
-      def read(bytes = 40960)
+      def read(bytes = 65536)
         begin          
           IO.select(@inboxes, nil, nil)[0][0].read_nonblock(bytes)
         rescue IO::WaitReadable, Errno::EINTR

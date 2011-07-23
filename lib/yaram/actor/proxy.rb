@@ -26,9 +26,9 @@ module Yaram
         @lock = Mutex.new
       end # initialize(addr)
       
-      def request(msg)
+      def request(msg, opts = {})
         m = msg.is_a?(Message) ? msg : Message.new(msg)
-        super(m.to(@outbox.address))
+        super(m.to(@outbox.address), opts)
       end # request(msg)
       
       def publish(msg)

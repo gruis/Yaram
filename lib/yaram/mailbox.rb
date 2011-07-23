@@ -85,7 +85,7 @@ module Yaram
       end
     end # write(msg)
     
-    def read(bytes = 40960)
+    def read(bytes = 65536)
       begin
         result = @io.read_nonblock(bytes)
       rescue IO::WaitReadable, Errno::EINTR

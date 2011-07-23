@@ -36,7 +36,12 @@ module Yaram
       else
         include Ox
         def load(xml)
-          super(xml, :mode => :object)
+          begin
+            super(xml, :mode => :object)
+          rescue Exception => e
+            raise ParseError, "unable to parse '#{xml}'"
+          end # begin
+          
         end
       end # ((oxgem = Gem.loaded_specs["ox"]).is_a?(Gem::Specification)) && Gem::Requirement.new("~>1.2.2").satisfied_by?(oxgem.version)
 
