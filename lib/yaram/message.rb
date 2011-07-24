@@ -4,29 +4,22 @@ module Yaram
   class Message    
     
     class << self
-      attr_reader :context
-      @@contexts = []
-      
       def gen_context_prefix
         @@uuid     = "#{UUID.generate}-#{Process.pid}"
         @@idx      = -1
       end # gen_context_prefix
             
-      def in_context(cid = nil)
-        return unless block_given?
-        @@contexts << @context unless @context.nil?
-        # @@idx += adds 0.7 s for 175,000
-        @context = cid.nil? ? "#{@@uuid}-#{@@idx += 1}" : cid
-        # 1.339507818222046 s for 175,000
-        begin
-          yield(@context)
-        ensure
-          @context = @@contexts.pop
-        end # begin        
-      end # in_context
+      def newcontext
+        if block_given?
+          yield "#{@@uuid}-#{@@idx += 1}"
+        else
+          "#{@@uuid}-#{@@idx += 1}"
+        end # block_given?
+      end # newcontext      
     end # << self
     
-    attr_accessor :reply_to, :context, :content
+    attr_accessor :content, :to
+    attr_writer :to, :reply_to, :context, :from
     
     def initialize(content, context = nil, reply_to = nil)
       @content    = content
@@ -38,11 +31,47 @@ module Yaram
       @reply
     end # reply?
     
+    def to(to = nil)
+      return @to if to.nil?
+      @to = to
+      self
+    end # to(to = nil)
+    
+    def context(ctx = nil)
+      return @context if ctx.nil?
+      @context = ctx
+      self
+    end # context(ctx = nil)
+    
+    def reply_to(rto = nil)
+      return (@reply_to || @from) if rto.nil?
+      @reply_to = rto
+      self
+    end # reply_to(rto = nil)
+    
+    def from(frm = nil)
+      return @from if frm.nil?
+      @from = frm
+      self
+    end # from(frm = nil)
+    
+    
     def reply(to = nil)
       @reply    = true
       @reply_to = to
       self
     end # reqreply
     
+    def eql?(other)
+      puts "#{self} == #{other}"
+      content == other.content && context == other.context && to == other.to && reply_to == other.reply_to
+    end # ==(other)
+    
+    def to_s
+      #{}"to:#{to};from:#{from};reply_to:#{reply_to};context:#{context};content:#{content}"
+      content
+    end # to_s
+    
   end # class::Message
+  Message.gen_context_prefix
 end # module::Yaram

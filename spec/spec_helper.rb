@@ -2,6 +2,35 @@ require "yaram"
 require 'benchmark'
 
 module Yaram::Test
+  class MCounter
+    include Yaram::Actor
+    def initialize(start = 0)
+      @counter = start
+    end 
+    def status
+      message("retrieving status ... please wait a moment")
+      message(:down)
+      :up
+    end # status
+    def inc(amt)
+      @counter += amt
+    end # inc
+    def value
+      @counter
+    end # value
+    def echo(msg)
+      msg
+    end
+    def anything(*args)
+    end # anything(*args)
+    def crash
+      raise "I'm stupid"
+    end # crash
+    
+  end # class::MCounter
+
+
+
 
   class Actor < ::Yaram::Actor::Base
     def status
