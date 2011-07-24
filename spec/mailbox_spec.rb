@@ -104,20 +104,25 @@ describe Yaram do
               )
       actor.sync(:status).should == :up
     end # it should work with redis mailboxs
-    it "should be fast" do
+    
+    it "should be reliable" do
       actor = Yaram::Actor::Proxy.new(
-                Yaram::Test::MCounter.new.spawn(:mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}"))
+                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}"))
               )
       actor.!(:inc, 1) # initial connection setup takes about 0.03 seconds
       sleep 1
-      8000.times { actor.!(:inc, 1) }
-      actor.request([:value], :timeout => 2).should == 8001
-      true.should == false
+      100000.times { actor.!(:inc, 1) }
+      actor.request([:value], :timeout => 10).should == 100001
+    end # should be reliable
+    
+    it "should be fast" do
+      actor = Yaram::Actor::Proxy.new(
+                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}"))
+              )
+      actor.!(:inc, 1) # initial connection setup takes about 0.03 seconds
       expect {
         100000.times { actor.!(:inc, 1) } 
-      }.to take_less_than(40).seconds
-      sleep 40
-      actor.sync(:value).should == 100000
+      }.to take_less_than(3).seconds
     end # it should be fast
   end # "redis mailbox"
 end # describe Yaram

@@ -10,6 +10,7 @@ module Yaram
       
       # @return
       def initialize(addr = nil)
+        @buffer = StringIO.new
         super(addr)
       end # initialize(addr = nil)
       
@@ -19,7 +20,7 @@ module Yaram
         @io = redis_connection(addr)
         super()
       end
-      
+
       def bind(addr = nil)
         close if connected? || bound?
         addr ||= @address
@@ -33,19 +34,9 @@ module Yaram
         # default bytes is high to cope with redis giving us
         # large messages. once the redis parser is written
         # bytes should be reduced.
-        r = super(bytes).split("\r\n")
-        return nil if r.nil?      
-        begin
-          # kludge !!!!!
-          # Until this is updated to properly parse the redis wire format
-          # it will raise exceptions and/or return incomplete messages
-          r.join("\n")
-           .split("]]>]]>") # if the record seperator ever changes in Actor we'll need to change it here too!
-           .map{|m| m.strip.split("\n")[6..-1].join("\n") }
-           .join("]]>]]>") << "]]>]]>"
-        rescue Exception => e
-          raise ParseError, "unable to parse '#{r}'"
-        end # begin
+        r = super(bytes)
+        return nil if r.nil?
+        messages(r).join("\n")
       end
       
       def write(msg)
@@ -57,6 +48,81 @@ module Yaram
       
       
       private
+      
+      # Any incomplete messages will be held and appended to on subsequent calls.
+      # @param [String] raw the raw redis messages
+      # @return [Array]
+      def messages(raw)
+        @buffer.write(raw)
+        @buffer.pos   = 0
+        truncated_msg = nil
+        msgs          = []
+
+        rollback_pos = catch :truncated do
+          # This is not pretty code.
+          # I've tried to keep the number of blocks and method calls low.
+          while !@buffer.eof?
+            msg_start = @buffer.pos
+            case @buffer.read(1)
+            when "-"
+              bmsg = ""
+              @buffer.pos = @buffer.pos.tap{ @buffer.pos = msg_start; bmsg += @buffer.read }
+              raise ::Yaram::CommunicationError, "redis message was not received correctly: #{bmsg}"
+            when "*"
+              # get the argument count
+              cnt = ""
+              throw(:truncated, msg_start) if @buffer.eof?
+              true while ( cnt << @buffer.read(1) )[-2..-1] != "\r\n" && !@buffer.eof?
+              throw(:truncated, msg_start) if @buffer.eof?
+              cnt = cnt[0..-3]
+              raise ParseError, "expected count '#{cnt}' to be 3" unless cnt == '3'
+              
+              # get the type
+              len = ""
+              true while ( ( len << @buffer.read(1) )[-2..-1] != "\r\n" && !@buffer.eof?)
+              throw(:truncated, msg_start) if @buffer.eof?
+              raise ParseError, "expected first argument length '#{len[1..-3]}' to be 7" unless '7' == len[1..-3]
+              type = @buffer.read(7)
+              @buffer.read(2) # pull off the CRLF
+              throw(:truncated, msg_start) if @buffer.eof?
+              raise ParseError, "expected type '#{type}' to be 'message'" unless 'message' == type
+              
+              # get the topic
+              len = ""
+              true while ( ( len << @buffer.read(1) )[-2..-1] != "\r\n" && !@buffer.eof?)
+              throw(:truncated, msg_start) if @buffer.eof?
+              len   = len[1..-3].to_i
+              topic = @buffer.read(len)
+              @buffer.read(2) # pull off the CRLF
+              throw(:truncated, msg_start) if @buffer.eof?
+              
+              # get the message
+              len = ""
+              true while ( ( len << @buffer.read(1) )[-2..-1] != "\r\n" && !@buffer.eof?)
+              throw(:truncated, msg_start) if @buffer.eof?
+              len = len[1..-3].to_i
+              msg = @buffer.read(len)
+              throw(:truncated, msg_start) if len != msg.length && @buffer.eof?
+              msgs.push(msg)
+              @buffer.read(2) # pull off the CRLF
+            when ""
+              # we're at the end of the buffer
+              raise ParseError, "expected to be at the end of the buffer" unless @buffer.eof?
+            end # !@buffer.eof?
+          end # io.pos != io.length
+        end # :truncated
+
+        if rollback_pos.nil?
+          @buffer.truncate(0)
+        else
+          @buffer.pos = rollback_pos
+          contents = @buffer.read
+          @buffer.truncate
+          @buffer.write(contents)
+        end # rollback_pos.nil?
+        msgs
+      end # messages(raw)
+      
       
       # Check for a success code response from the redis server
       # @param [Exception, nil] excp the exception class to raise on error, or nil

@@ -36,7 +36,7 @@ module Yaram
         at_exit { puts "#{$0} terminating" }
         begin
           $0      = "yaram_#{self.class.to_s.downcase.split("::")[-1]}"
-  
+          
           if opts[:log] == false
             STDOUT.reopen "/dev/null"
             STDERR.reopen "/dev/null"
@@ -48,7 +48,7 @@ module Yaram
             STDOUT.reopen "#{$0}.#{ts}.#{Process.pid}.stdout"
             STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
           end # opts[:log] == false
-
+          
           subscribe(mbox)
         ensure
           mbox.close
@@ -145,12 +145,12 @@ module Yaram
     # @todo stop using Message.context
     # @return
     def get(opts = {})
-      opts = { :timeout => 1, :def => nil, :type => Message }.merge(opts)
+      opts = { :timeout => 1, :interval => 0.01, :def => nil, :type => Message }.merge(opts)
       #puts "#{Process.pid} #{self.class}#get(#{opts})"
       begin
         waituntil = Time.new.to_i + opts[:timeout]
         while Time.new.to_i <= waituntil && @msgs[@def_context[-1]].select{|m| m.instance_of?(opts[:type]) }.empty?
-          messages(opts[:timeout])
+          messages(opts[:interval])
         end # Time.new.to_i <= waituntil
         return opts[:def] if (@msgs[@def_context[-1]].select{|m| m.instance_of?(opts[:type])}).empty?
         idx = @msgs[@def_context[-1]].find_index{|m| m.instance_of?(opts[:type]) }
