@@ -124,8 +124,11 @@ module Yaram
       msg
     end # reply
     
-    # Start a session
-    # @return
+    # Start a session.
+    # Any replies sent during a session will by default be sent to a def_to and
+    # have the def_context.
+    # @param [String] def_context the default context for all replies
+    # @param [String] def_to the default address to send replies to during the session
     def session(def_context, def_to = nil)
       #puts "#{Process.pid} session(#{def_context}, #{def_to})"
       @def_to.push(def_to)
