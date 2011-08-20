@@ -37,11 +37,11 @@ describe Yaram do
   end # it should comply with http://ruben.savanne.be/articles/concurrency-in-erlang-scala
   
   describe "reliablity" do
-    before(:each) { @counter = Yaram::Actor::Simple.new(Yaram::Test::Counter, :log => false) }
+    before(:each) { @counter = Yaram::Actor.start(Yaram::Test::Counter.new, :log => false) }
     after(:each) { @counter.stop }
-    
+
     it "should return responses to requests even if other messages are in the queue" do
-      actor = Yaram::Actor::Simple.new(Yaram::Test::MultiReplyActor, :log => false)
+      actor = Yaram::Actor.start(Yaram::Test::MultiReplyActor.new, :log => false)
       actor.sync(:status).should == :up
     end # it should return responses to requests even if other messages are in the queue   
     

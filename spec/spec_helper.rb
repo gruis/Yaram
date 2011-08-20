@@ -59,8 +59,8 @@ module Yaram::Test
 
   class MultiReplyActor < ::Yaram::Actor::Base
     def status
-      1000.times { publish("incorrect response") }
-      publish("incorrect response")
+      1000.times { message("incorrect response") }
+      message("incorrect response")
       :up
     end # status
   end # class::MultiReplyActor
@@ -87,6 +87,9 @@ module Yaram::Test
     def value
       @count
     end # value
+    def status
+      :up
+    end # status
   end # class::Counter < Yaram::Actor::Base
   
   module RSpec

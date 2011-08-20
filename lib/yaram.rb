@@ -13,7 +13,6 @@ require "yaram/message"
 require "yaram/reply"
 require "yaram/session"
 require "yaram/actor"
-require "yaram/pipe"
 require "yaram/mailbox"
 
 module Yaram
