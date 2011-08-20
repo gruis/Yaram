@@ -24,13 +24,15 @@ describe Yaram do
     it "should be able to start itself" do
       actor = Yaram::Test::Counter.new(601).spawn(:log => false)
       #actor = Yaram::Test::Counter.spawn(:log => false)
+      actor.should respond_to(:publish)
+      actor.should respond_to(:request)
       actor.publish([:inc, 1])
       actor.request([:value]).should == 1
     end # it should be able to start itself  
   end # "startup"
 
   it "should comply with http://ruben.savanne.be/articles/concurrency-in-erlang-scala" do
-    counter = Yaram::Actor::Simple.new(Yaram::Test::Counter, :log => false)
+    counter = Yaram::Actor.start(Yaram::Test::Counter.new, :log => false)
     cnt = 2000
     cnt.times { counter.!(:inc, 1) }
     counter.sync(:value).should == cnt
@@ -51,11 +53,11 @@ describe Yaram do
 
   describe "implicit and explicit replies" do
     it "should return the result of the actor's method if the actor doesn't call reply explicitly" do
-      actor = Yaram::Actor::Simple.new(Yaram::Test::ImplicitReplyActor, :log => false)
+      actor = Yaram::Actor.start(Yaram::Test::ImplicitReplyActor.new, :log => false)
       actor.sync(:status).should == :implicit
     end # it should return the result of the actor's method if the actor doesn't call reply explicitly  
     it "should not return the result of the actor's method if the actor calls reply explicitly" do
-      actor = Yaram::Actor::Simple.new(Yaram::Test::ExplicitReplyActor, :log => false)
+      actor = Yaram::Actor.start(Yaram::Test::ExplicitReplyActor.new, :log => false)
       actor.sync(:status).should == :explicit
     end # it should not return teh result of the actor's method if the actor calls reply explicitly  
   end # "implicit and explicit replies"

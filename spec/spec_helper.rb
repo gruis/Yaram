@@ -77,9 +77,9 @@ module Yaram::Test
   end # class::ImplicitReplyActor < ::Yaram::Actor::Base
 
   class Counter < ::Yaram::Actor::Base
-    def initialize
+    def initialize(cnt = 0)
       super
-      @count = 0
+      @count = cnt
     end # initialize
     def inc(amt)
       @count += amt
