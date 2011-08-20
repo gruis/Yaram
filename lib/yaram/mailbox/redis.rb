@@ -117,9 +117,10 @@ module Yaram
         else
           @buffer.pos = rollback_pos
           contents = @buffer.read
-          @buffer.truncate
+          @buffer.truncate(0)
           @buffer.write(contents)
         end # rollback_pos.nil?
+        
         msgs
       end # messages(raw)
       

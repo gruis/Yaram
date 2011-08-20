@@ -1,5 +1,6 @@
 module Yaram
   class Mailbox
+    # A mixin used by Tcp and Unix mailboxes to keep track of multiple connections - one for each peer.
     module PersistentClients
       # Read a message from the first client connection that has sent data
       # @todo round-robin between the clients.

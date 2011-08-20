@@ -1,0 +1,204 @@
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>
+*3
+$7
+message
+$36
+7006a250-ad25-012e-cb5f-040cced572e4
+$275
+<o c="Yaram::Message">
+  <a a="@content">
+    <m>inc</m>
+    <i>1</i>
+  </a>
+  <z a="@context"/>
+  <z a="@reply_to"/>
+  <s a="@to">redis://127.0.0.1/7006a250-ad25-012e-cb5f-040cced572e4</s>
+  <s a="@from">redis://127.0.0.1/70070b00-ad25-012e-cb5f-040cced572e4</s>
+</o>
+]]>]]>

@@ -1,0 +1,6 @@
+- Actor::Proxy should be able to stop the actor
+- Actors created in spec examples should be stopped when the example is completed
+- Messages should be able to be given a priority
+- Actors should be monitored and perhaps restarted if they die
+- A mixin should be provided to encrypt all messages through a mailbox via extend, or including it in inheriting Mailbox classes
+- A worker pool api should be provided for mailboxes that are capable of it, e.g.,. Redis

@@ -9,9 +9,10 @@ describe Yaram::Mailbox::Redis do
     subject.instance_variable_set(:@io, StringIO.new(@msgs))
   end # :each
   it "should parse redis messages" do
-    puts subject.read
+    subject.io.read.split("]]>]]>").length.should == 12
+    subject.io.pos = 0
     subject.read.split("]]>]]>").length.should == 12
-    
+    subject.io.pos = 0
     expect {
       subject.read.split("]]>]]>").map{|m| Yaram.encoder.load(m) }
     }.to_not raise_error
