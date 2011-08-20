@@ -1,7 +1,26 @@
 require "yaram"
 require 'benchmark'
+require "timeout"
 
 module Yaram::Test
+  class << self
+    def redis_up?(host = "127.0.0.1", port = 6379)
+      sock    = nil
+      begin
+        Timeout.timeout(1) {  sock  = TCPSocket::new(host, port) }
+      rescue Timeout::Error => e
+        return false
+      rescue Errno::ECONNREFUSED => e
+        return false
+      rescue Errno::EHOSTDOWN => e
+        return false
+      ensure
+        sock.close if sock.respond_to?(:close)
+      end # begin
+      true
+    end # redis_up?(host = "127.0.0.1", port = 6379)
+  end # class::<< self
+  
   class MCounter
     include Yaram::Actor
     def initialize(start = 0)

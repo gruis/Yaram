@@ -99,15 +99,17 @@ describe Yaram do
   
   describe "redis mailbox" do
     it "should work with redis mailboxs" do
+      pending("no redis server at 127.0.0.1") unless Yaram::Test.redis_up?("127.0.0.1")
       actor = Yaram::Actor::Proxy.new(
-                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}"))
+                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://127.0.0.1/#{UUID.generate}"))
               )
       actor.sync(:status).should == :up
     end # it should work with redis mailboxs
     
     it "should be reliable" do
+      pending("no redis server at 127.0.0.1") unless Yaram::Test.redis_up?("127.0.0.1")
       actor = Yaram::Actor::Proxy.new(
-                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}"))
+                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://127.0.0.1/#{UUID.generate}"))
               )
       actor.!(:inc, 1) # initial connection setup takes about 0.03 seconds
       sleep 1
@@ -116,8 +118,9 @@ describe Yaram do
     end # should be reliable
     
     it "should be fast" do
+      pending("no redis server at 127.0.0.1") unless Yaram::Test.redis_up?("127.0.0.1")
       actor = Yaram::Actor::Proxy.new(
-                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://33.33.33.10/#{UUID.generate}"))
+                Yaram::Test::MCounter.new.spawn(:log => false, :mailbox => Yaram::Mailbox::Redis.new("redis://127.0.0.1/#{UUID.generate}"))
               )
       actor.!(:inc, 1) # initial connection setup takes about 0.03 seconds
       expect {

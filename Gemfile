@@ -7,7 +7,7 @@ require "rbconfig"
 gem "yaram", :path => File.expand_path("..", __FILE__)
 
 group :default do
-  gem "ox", "~>1.2.2"
+  gem "ox", "~>1.2.7"
 end # :default do 
 
 gem "thor"

@@ -28,7 +28,7 @@ module Yaram
   
   module Encoder
     class << self
-      if !(((oxgem = Gem.loaded_specs["ox"]).is_a?(Gem::Specification)) && Gem::Requirement.new("~>1.2.2").satisfied_by?(oxgem.version))
+      if !(((oxgem = Gem.loaded_specs["ox"]).is_a?(Gem::Specification)) && Gem::Requirement.new("~>1.2.7").satisfied_by?(oxgem.version))
         include Marshal
         def load(xml)
           super(xml)

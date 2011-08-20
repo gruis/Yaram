@@ -84,9 +84,7 @@ rb_yaram_mbox_write_unblocked(VALUE self, VALUE io, VALUE str)
  * They originate from Ruby's io.c. We redefine them here 
  * because in that file they are declared with static, so
  * they aren't accessible here.
- * 
  */
-
 static int io_fflush(rb_io_t *fptr){
     rb_io_check_closed(fptr);
     if (fptr->wbuf_len == 0)
