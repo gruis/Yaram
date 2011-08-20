@@ -1,12 +1,22 @@
 module Yaram
   module Actor
+    
+    # Actor::Control is a mixin used to keep track of Actors and restart them
+    # as necessary.
+    # @example
+    #   Proxy.new(obj.spawn(opts))
+    #        .tap{|p| p.extend(Control).register(obj, p.outbox.address) }
     module Control
       
-      # @return
+      # Register an actor object to be controlled/monitored.
+      # @param [Yaram::Actor] obj the actor to watch and restart as necessary
+      # @param [String] spaddress the address of the actor
+      # @return [Control] the controller
       def register(obj, spaddress)
         @snapshot  = obj
         @spid      = obj.spid
         @spaddress = spaddress
+        self
       end # register(obj)
       
       # If a request results in the actor restarting then resend the last request.
@@ -33,12 +43,15 @@ module Yaram
         register(@snapshot, @spaddress)
       end # restart
       
+      # Stops the actor process.
+      # Does not stop actors that aren't running on the same machine.
       def stop
         begin
           Process.getpgid(@spid)
           Process.kill(:TERM, @spid)
         rescue Errno::ESRCH => e
         end # begin
+        self
       end # close
       
       

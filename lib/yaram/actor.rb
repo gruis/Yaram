@@ -22,6 +22,7 @@ module Yaram
     # @param [Hash] opts spawn options
     # @option opts [false, String, nil] :log
     # @option opts [Class, String, Yaram::Mailbox] :mailbox the mailbox to bind the actor to
+    # @return [String] the address of the actor.
     def spawn(opts = {})
       #puts "#{Process.pid} spawn(#{opts})"
       opts  = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
@@ -61,30 +62,29 @@ module Yaram
       
       at_exit do
         begin
-          # @todo come up with some way to unregister the kill in case #detach is caused
           Process.getpgid(@spid) # raises ESRCH if process id already closed
           Process.kill(:TERM, @spid) 
         rescue Errno::ESRCH => e
         end # begin
       end # at_exit
-
+      
       mbox.unbind
     end # spawn(opts = {})
     
     
     class << self
-      # Start an actor in another process and return an Proxy object that can be used to communicate and supervise it.
+      # Start an actor in another process and return a Proxy object that can be used to communicate and supervise it.
       # @param [Yaram::Actor]
       def start(obj, opts = {})
         obj.extend(Yaram::Actor) unless obj.is_a?(Yaram::Actor)
         Proxy.new(obj.spawn(opts))
               .tap{|p| p.extend(Control).register(obj, p.outbox.address) }
       end # start
-    end # class::self
-
+    end # class << self
     
     
-    private
+    
+  private
     
     # Publish a message and don't wait for a response.
     # Is not thread-safe; you need to synchronize with the lock before calling.
@@ -92,6 +92,7 @@ module Yaram
     def publish(msg)
       #@indents ||= []
       #puts "#{@indents.join("")}#{Process.pid} publish(#{msg.inspect})"
+      raise Yaram::ActorDied unless @connections[msg.to].open?
       msg.from(@address)
       @connections[msg.to].write(Yaram.encoder.dump(msg) + "]]>]]>")
     end # publish(*msg)

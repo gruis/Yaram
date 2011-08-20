@@ -22,7 +22,7 @@ module Yaram
         @def_to            = []
         @def_context       = []
 
-        @msgs = Hash.new {|hash,k| hash[k] = [] }        
+        @msgs = Hash.new {|hash,k| hash[k] = [] }
         @lock = Mutex.new
       end # initialize(addr)
       

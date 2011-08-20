@@ -54,7 +54,14 @@ module Yaram::Test
   end # class::MCounter
 
 
-
+  class Suicidal < Yaram::Actor::Base
+    def die
+      Process.exit
+    end
+    def status
+      :up
+    end
+  end # class::Suicidal < Yaram::Actor::Base
 
   class Actor < ::Yaram::Actor::Base
     def status

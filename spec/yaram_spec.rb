@@ -74,4 +74,11 @@ describe Yaram do
     pending
   end # "starting an actor that other actors will use"
 
+  describe "dead actors" do
+    it "should know when an actor dies" do
+      actor = Yaram::Actor.start(Yaram::Test::Suicidal.new, :log => false)
+      actor.! :die
+      expect { actor.sync :status }.to raise_error(Yaram::ActorDied)
+    end # should know when an actor dies
+  end # dead actors
 end # describe Yaram
