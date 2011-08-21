@@ -20,12 +20,12 @@ describe "Yaram::Actor::Pool" do
   
   it "should divide work up among the pool members" do
     actors    = []
-    3.times { actors.push(Yaram::Actor.start(PoolCounter.new, :log => false)) }
+    3.times { |i| actors.push(Yaram::Actor.start(PoolCounter.new, :log => false)) }
     
     addresses = actors.map{|p| p.outbox.address }
-    pool      = Yaram::Actor::Proxy.new(Yaram::Actor::Pool.new(*addresses, :log => false).address)
     
-    pool.sync(:members).should == addresses
+    pool       = Yaram::Actor::Pool.new(*addresses, :log => false, :mailbox => Yaram::Mailbox::Udp)
+    pool.members.should == addresses
     pool.sync(:inc, 10).should == 10
     
     pids = []

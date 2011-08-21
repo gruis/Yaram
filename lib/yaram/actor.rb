@@ -111,7 +111,7 @@ module Yaram
     # @return [Object] msg
     def reply(msg)
       #@indents ||= []
-      #puts "#{@indents.join("")}#{Process.pid} reply(#{msg.inspect})"
+      #puts "#{@indents.join("")}#{Process.pid} - reply(#{msg.inspect})"
       if block_given?
         #@indents << "   "
         @replied = false # probably not the right approach

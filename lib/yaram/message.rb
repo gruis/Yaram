@@ -68,10 +68,13 @@ module Yaram
     end # ==(other)
     
     def to_s
-      #{}"to:#{to};from:#{from};reply_to:#{reply_to};context:#{context};content:#{content}"
+      #"to:#{to};from:#{from};reply_to:#{reply_to};context:#{context};content:#{content}"
       content
     end # to_s
-    
+
+    def details
+      "to: #{to}\n" + "from: #{from}\n" + "reply_to: #{reply_to}\n" + "content: #{content}\n"
+    end # details
   end # class::Message
   Message.gen_context_prefix
 end # module::Yaram

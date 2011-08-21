@@ -1,3 +1,4 @@
+require "yaram/actor/proxy"
 require "yaram/actor/pool/member"
 
 module Yaram
@@ -15,7 +16,7 @@ module Yaram
     #       handled first by the members.
     class Pool
       include Yaram::Actor
-
+      
       attr_reader :address
 
       # Create a Pool.
@@ -30,12 +31,8 @@ module Yaram
         
         register(*actor_addresses) unless actor_addresses.empty?
         
-        @address = spawn(@opts) do |msg|
-          #puts "#{Process.pid} #{self} received: #{msg}"
-          #puts "#{Process.pid}  to: #{msg.to}"
-          #puts "#{Process.pid}  from: #{msg.from}"
-          #puts "#{Process.pid}  reply_to: #{msg.reply_to}"
-          #puts "#{Process.pid}  content: #{msg.content}"
+        addr = spawn(@opts) do |msg|
+          #puts "#{Process.pid} #{self} received: \n#{msg.details.split("\n").map{|l| "#{Process.pid}     #{l}"}.join("\n") }"
           
           # A worker is volunteering to handle a message.
           if msg.content == :_yaram_pool_member_available
@@ -66,6 +63,10 @@ module Yaram
             end # self.class.public_instance_methods.include?(msg.content[0])
           end # msg.content == _yaram_pool_member_available?
         end #  |msg|
+        
+        # The actor that is the Pool will not get past the spawn
+        # so we are just the local object that created the Pool.
+        @proxy = Yaram::Actor::Proxy.new(addr)
       end # initialize(*actor_addresses)
       
       # Registers one or more actors with the pool.
@@ -74,6 +75,8 @@ module Yaram
       # @param [String, Actor] actor_addresses - the addresses or actors that should be registered.
       # @return [String] address of the pool
       def register(*actor_addresses)
+        return @proxy.sync(:register, *actor_addresses) unless @proxy.nil?
+        
         actor_addresses.each do |addr| 
           raise ArgumentError, "#{addr} must be an actor address, or respond to :address" unless addr.is_a?(String) || addr.respond_to?(:address)
           a = addr.respond_to?(:address) ? addr.address : addr
@@ -88,6 +91,8 @@ module Yaram
       # Remove one or more actors from the pool
       # @return [String] address of the pool
       def unregister(*member_addresses)
+        return @proxy.sync(:unregister, *member_addresses) unless @proxy.nil?
+        
         member_addresses.each do |a|
           raise ArgumentError, "#{addr} must be an actor address, or respond to :address" unless addr.is_a?(String) || addr.respond_to?(:address)
           @actors.delete(addr.respond_to?(:address) ? addr.address : addr)
@@ -100,6 +105,8 @@ module Yaram
       # Sends an asychronous message to all actors.
       # @return [String] address of the pool
       def broadcast(msg)
+        return @proxy.sync(:broadcast, msg) unless @proxy.nil?
+        
         @actors.each { |addr| message(msg, addr) }
         address
       end # broadcast(msg)
@@ -107,6 +114,8 @@ module Yaram
       # Restores any members that were previously present in the pool before this process crashed.
       # @return [String] address of the pool
       def restore_members
+        return @proxy.sync(:restore_members, *actor_addresses) unless @proxy.nil?
+        
         register(IO.read(@opts[:restore_list]).split("\n"))
         address
       end # restore_members
@@ -114,8 +123,29 @@ module Yaram
       # The actors that are a member of the pool
       # @return [Array] the addresses of the actors in the pool
       def members
+        return @proxy.sync(:members) unless @proxy.nil?
         @actors
       end # members
+      
+      
+      # Methods taken from Proxy
+      def request(msg, opts = {})
+        @proxy.request(msg, opts) if @proxy
+        super(msg, opts)
+      end # request(msg)
+      
+      def publish(msg)
+        @proxy.publish(msg) if @proxy
+        super(msg)
+      end # publish(msg)
+      
+      def !(meth, *args)
+        @proxy.!(meth, *args) if @proxy
+      end 
+
+      def sync(meth, *args)
+        @proxy.sync(meth, *args) if @proxy
+      end
       
       
     private
@@ -133,6 +163,8 @@ module Yaram
       
       # Saves the list of members so that it can be restored in the event that this pool crashes.
       def save_member_list
+        return @proxy.sync(:save_member_list) unless @proxy.nil?
+        
         File.open(@opts[:restore_list], "w+") { |f| f.puts(@actors) }
         self
       end # save_member_lsit
