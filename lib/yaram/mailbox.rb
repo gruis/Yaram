@@ -127,7 +127,7 @@ module Yaram
     end
     
     # Close the mailbox and don't receive any messages from it
-    # @return
+    # @return [String] the address of the mailbox
     def unbind
       @io.close
       @address.tap{ @address = "" }
