@@ -119,25 +119,21 @@ module Yaram
       end
     end # read(bytes)
     
-    # The address of the mailbox
-    def to_s
-      @address || super
-    end # to_s
-    
-    
-    
-    
-    
-    def select(timeout = 1)
-      IO.select([@io], nil, nil, timeout)
-    end
-    
     # Unbinds the mailbox. 
     # Subclases should override close and add in anything necessary to cleanup the mailbox from
     # the system, e.g., delete a file.
     # @return [String] the address of the mailbox that was closed
     def close
       unbind
+    end
+    
+    # The address of the mailbox
+    def to_s
+      @address || super
+    end # to_s
+    
+    def select(timeout = 1)
+      IO.select([@io], nil, nil, timeout)
     end
     
     # Close the mailbox and don't receive any messages from it

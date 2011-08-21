@@ -45,6 +45,7 @@ module Yaram
       
       # Stops the actor process.
       # Does not stop actors that aren't running on the same machine.
+      # @return [Control] the controller
       def stop
         begin
           Process.getpgid(@spid)
