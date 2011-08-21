@@ -82,6 +82,16 @@ module Yaram
         Proxy.new(obj.spawn(opts))
               .tap{|p| p.extend(Control).register(obj, p.outbox.address) }
       end # start
+      
+      # Connect to an actor via its address.
+      # @see Yaram::Actor::Proxy#publish
+      # @see Yaram::Actor::Proxy#request
+      # @see Yaram::Actor::Proxy#sync
+      # @see Yaram::Actor::Proxy#!
+      # @return [Yaram::Actor::Proxy] a communication channel with the actor
+      def connect(addr)
+        Proxy.new(addr)
+      end # connect(addr)
     end # class << self
     
     

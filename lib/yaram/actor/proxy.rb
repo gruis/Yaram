@@ -25,27 +25,33 @@ module Yaram
         @msgs = Hash.new {|hash,k| hash[k] = [] }
         @lock = Mutex.new
       end # initialize(addr)
+
+        # Call a method on the actor asynchronously
+        # @param [Symbol] meth the method to call
+        # @param [Object(s)] the arguments to provide to the method
+        def !(meth, *args)
+          publish([meth, *args])
+        end 
+
+        # Call a method on the actor and return its reply
+        # @param [Symbol] meth the method to call
+        # @param [Object(s)] the arguments to provide to the method
+        def sync(meth, *args)
+          request([meth, *args])
+        end
       
+      # Send a message and wait for a reply.
       def request(msg, opts = {})
         m = msg.is_a?(Message) ? msg : Message.new(msg)
         super(m.to(@outbox.address), opts)
       end # request(msg)
       
+      # Send a message asynchronously
       def publish(msg)
         m = msg.is_a?(Message) ? msg : Message.new(msg)
         super(m.to(@outbox.address))
       end # publish(msg)
       
-      
-      # Send a message asynchronously
-      def !(meth, *args)
-        publish([meth, *args])
-      end 
-
-      # Send a message and wait for a reply
-      def sync(meth, *args)
-        request([meth, *args])
-      end
     end # class::Proxy
   end # module::Actor
 end # module::Yaram
