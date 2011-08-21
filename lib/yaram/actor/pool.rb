@@ -10,6 +10,9 @@ module Yaram
     # @see http://www.rabbitmq.com/tutorials/tutorial-two-python.html
     #
     # Send messages to the Pool's #address to have it distributed to the members.
+    #
+    # @todo consider adding a more robust reservation system so that messages from the pool will be answered
+    #       will be handled first by the members.
     class Pool
       include Yaram::Actor
 
@@ -33,7 +36,8 @@ module Yaram
           #puts "#{Process.pid}  from: #{msg.from}"
           #puts "#{Process.pid}  reply_to: #{msg.reply_to}"
           #puts "#{Process.pid}  content: #{msg.content}"
-          # A worker is volunteering to handle a message
+          
+          # A worker is volunteering to handle a message.
           if msg.content == :_yaram_pool_member_available
             # Do we have work to give?
             if !@msg_queue.empty?
@@ -44,8 +48,12 @@ module Yaram
                    .from(address)
                    .to(msg.from)
               publish(o_msg)
+              # Actors can still receive messages directly or be members of multiple Pools.
+              # There is no guarantee at all that the member will be free by the time the message
+              # is delivered to it.
             end # !@msg_queue.empty?
-          # The message is from another actor directed at the pool
+
+          # The message is from another actor and directed at the pool
           else
             # This is a message for the pool controller
             if self.class.public_instance_methods.include?(msg.content[0])
