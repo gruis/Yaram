@@ -1,7 +1,6 @@
 require File.join(File.dirname(__FILE__), "spec_helper")
 
-class PoolCounter < Yaram::Actor::Base
-  include Yaram::Actor::Pool::Member
+class PoolCounter
   def initialize(value = 0)
     @count = value
   end # initialize(count = 0)
@@ -34,4 +33,15 @@ describe "Yaram::Actor::Pool" do
     pids.count(pids[0]).should_not == pids.length
   end # should divide work up among the pool members
   
+  describe ".connect" do
+    it "should connect to a running Pool" do
+      actors    = []
+      3.times { |i| actors.push(Yaram::Actor.start(PoolCounter.new, :log => false)) }
+      addresses = actors.map{|p| p.outbox.address }
+      pool       = Yaram::Actor::Pool.new(*addresses, :log => false, :mailbox => Yaram::Mailbox::Udp)
+      other_pool = Yaram::Actor::Pool.connect(pool.address)
+      other_pool.should_not == pool
+      other_pool.members.should == pool.members
+    end # should connect to a running Pool
+  end # .connect
 end # "Yaram::Actor::Pool"

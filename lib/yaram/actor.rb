@@ -266,6 +266,13 @@ module Yaram
         end # begin
       end # loop do
     end # subscribe(io)
-        
+    
+    def _yaram_pool_member_available?
+      puts "#{Process.pid} _yaram_pool_member_available?"
+      # Sends an implicit reply telling the requester (should be the pool) that this 
+      # instance is available to process a message.
+      reply(:_yaram_pool_member_available)
+    end # _yaram_pool_member_available?
+    
   end # module::Actor
 end # module::Yaram

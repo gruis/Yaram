@@ -1,5 +1,4 @@
 require "yaram/actor/proxy"
-require "yaram/actor/pool/member"
 
 module Yaram
   module Actor
@@ -17,8 +16,18 @@ module Yaram
     class Pool
       include Yaram::Actor
       
+      class << self
+        # Connects to a Pool that is already running
+        # @param [String] addr the address of the Pool
+        def connect(addr)
+          allocate.tap do |pool|
+            pool.instance_variable_set(:@proxy, Yaram::Actor::Proxy.new(addr))
+          end #  |pool|
+        end # connect(addr)
+      end # << self
+      
       attr_reader :address
-
+      
       # Create a Pool.
       # @param [String, Actor] actor_addresses - the addresses or actors that should be registered.
       # @param [Hash] opts - any options that can be accepted by Pool::Actor.spawn plus a few more
@@ -31,7 +40,7 @@ module Yaram
         
         register(*actor_addresses) unless actor_addresses.empty?
         
-        addr = spawn(@opts) do |msg|
+        @address = spawn(@opts) do |msg|
           #puts "#{Process.pid} #{self} received: \n#{msg.details.split("\n").map{|l| "#{Process.pid}     #{l}"}.join("\n") }"
           
           # A worker is volunteering to handle a message.
@@ -66,7 +75,7 @@ module Yaram
         
         # The actor that is the Pool will not get past the spawn
         # so we are just the local object that created the Pool.
-        @proxy = Yaram::Actor::Proxy.new(addr)
+        @proxy = Yaram::Actor::Proxy.new(@address)
       end # initialize(*actor_addresses)
       
       # Registers one or more actors with the pool.
