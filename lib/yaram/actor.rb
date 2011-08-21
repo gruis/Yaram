@@ -3,6 +3,7 @@ require "yaram/actor/async"
 require "yaram/actor/sync"
 require "yaram/actor/base"
 require "yaram/actor/control"
+require "yaram/actor/pool"
 
 
 module Yaram
@@ -15,15 +16,16 @@ module Yaram
     attr_reader :spid
     # The address (URL) where this actor can be reached
     def address
-      @inbox.address
+      @inbox.nil? ? "" : @inbox.address
     end # address
 
-    # Spawn this object off into another process
+    # Spawn this object off into another process.
+    # If a block is given it will be passed to subscribe.
     # @param [Hash] opts spawn options
     # @option opts [false, String, nil] :log
     # @option opts [Class, String, Yaram::Mailbox] :mailbox the mailbox to bind the actor to
     # @return [String] the address of the actor.
-    def spawn(opts = {})
+    def spawn(opts = {}, &blk)
       #puts "#{Process.pid} spawn(#{opts})"
       opts  = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
       mbox  = Yaram::Mailbox.build(opts[:mailbox]).bind
@@ -42,15 +44,15 @@ module Yaram
             STDOUT.reopen "/dev/null"
             STDERR.reopen "/dev/null"
           elsif opts[:log].is_a?(String)
-            STDOUT.reopen opts[:log] + "stdout"
-            STDERR.reopen opts[:log] + "stderr"
+            STDOUT.reopen opts[:log] + ".stdout"
+            STDERR.reopen opts[:log] + ".stderr"
           else
             ts      = Time.new.to_i
             STDOUT.reopen "#{$0}.#{ts}.#{Process.pid}.stdout"
             STDERR.reopen "#{$0}.#{ts}.#{Process.pid}.stderr"
           end # opts[:log] == false
           
-          subscribe(mbox)
+          block_given? ? subscribe(mbox, &blk) : subscribe(mbox)
         ensure
           mbox.close
         end # begin
