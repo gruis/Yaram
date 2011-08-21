@@ -48,33 +48,46 @@ module Yaram
     
     attr_reader :address, :io
     
-    # Create a new mailbox
-    # @return
+    # Create a new mailbox that can either be turned into an inbox or an outbox via bind, or connect.
+    # @see #bind
+    # @see #bound?
+    # @see #connect
+    # @see #connected?
     def initialize(addr = nil)
       @address = addr if addr.is_a?(String)
     end # initialize(addr = nil)
     
-    # @return
-    def to_s
-      @address || super
-    end # to_s
-    
-    # Bind the mailbox so that it can receive messages
-    # @return
+    # Bind the mailbox so that it can receive messages.
+    # @return [Mailbox]
     def bind
       Yaram::Mailbox.prepare(@io)
       @connected , @bound = false, true
       self
     end # bind
     
-    # Connect to another mailbox in preparation for sending messages
-    # @return
+    # A mailbox is bound if it is an inbox - one that will receive messages.
+    # @return [Boolean]
+    def bound?
+      @bound == true
+    end # bound?
+    
+    # Connect to another mailbox in preparation for sending messages.
+    # @return [Mailbox]
     def connect
       Yaram::Mailbox.prepare(@io)
       @connected , @bound = true, false
       self
     end # connect
     
+    # A mailbox is connected if it is an outbox - one that will send messages to another
+    # mailbox that will receive it.
+    # @return [Boolean]
+    def connected?
+      @connected == true
+    end # connected?
+    
+    # Sends messages out of the mailbox and into the associated inbox.
+    # @param [String] msg the message to send
     def write(msg)
       begin
         #@io.write_nonblock(msg)
@@ -85,6 +98,8 @@ module Yaram
       end
     end # write(msg)
     
+    # Receives messages from the mailbox; expects the mailbox to be bound.
+    # @param [Fixnum] bytes the maximum number of bytes to read from the inbox.
     def read(bytes = 65536)
       begin
         result = @io.read_nonblock(bytes)
@@ -94,16 +109,21 @@ module Yaram
       end
     end # read(bytes)
     
-    def select(timeout = 1)
-      IO.select([@io], nil, nil, timeout)
-    end
-    
     # Unbinds the mailbox. 
-    # Subclases should override close and add in anything necessary to cleanup the mailbox from 
+    # Subclases should override close and add in anything necessary to cleanup the mailbox from
     # the system, e.g., delete a file.
     # @return [String] the address of the mailbox that was closed
     def close
       unbind
+    end
+    
+    # The address of the mailbox
+    def to_s
+      @address || super
+    end # to_s
+    
+    def select(timeout = 1)
+      IO.select([@io], nil, nil, timeout)
     end
     
     # Close the mailbox and don't receive any messages from it
@@ -116,15 +136,6 @@ module Yaram
     def to_io
       @io
     end # to_io
-    
-    def bound?
-      @bound == true
-    end # bound?
-    
-    # @return
-    def connected?
-      @connected == true
-    end # connected?
     
     def prepare
       Yaram::Mailblox.prepare(@io)
