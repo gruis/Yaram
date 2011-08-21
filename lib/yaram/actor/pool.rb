@@ -11,8 +11,8 @@ module Yaram
     #
     # Send messages to the Pool's #address to have it distributed to the members.
     #
-    # @todo consider adding a more robust reservation system so that messages from the pool will be answered
-    #       will be handled first by the members.
+    # @todo consider adding a more robust reservation system so that messages from the pool will be
+    #       handled first by the members.
     class Pool
       include Yaram::Actor
 
