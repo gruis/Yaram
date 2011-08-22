@@ -19,6 +19,7 @@ GEM
     fast-aes (0.1.1)
     highline (1.6.2)
     macaddr (1.0.0)
+    ox (1.2.7)
     rspec (2.2.0)
       rspec-core (~> 2.2)
       rspec-expectations (~> 2.2)
@@ -34,6 +35,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  ox (~> 1.2.7)
   rspec (~> 2.2.0)
   yaram!
   yaram-crypto!
