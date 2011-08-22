@@ -1,0 +1,13 @@
+source "http://rubygems.org"
+require "rbconfig"
+
+# Will automatically pull in this gem and all its
+# dependencies specified in the gemspec
+gem "yaram-crypto", :path => File.expand_path("..", __FILE__), :require => "yaram/crypto"
+gem "yaram", :path => File.expand_path("../..", __FILE__)
+
+gemspec
+
+group :test do
+  gem 'rspec', '~>2.2.0'
+end

@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby -wW2
+
+require "yaram/crypto"
+require "highline/import"
+require "fileutils"
+
+file    = "~/.yaram/key"
+bits    = 128
+confirm = true
+
+opts    = OptionParser.new
+opts.on("-b", "--bits Fixnum", Integer, "number of bits (128, 192, 256)") { |b| bits = b }
+opts.on("-f", "--file [File]", String, "file to write the key to (#{file})") {|f| file = f }
+opts.on("-y", "--[no]-yes", "answer yes to all confirmation questions") { |y| confirm = y }
+opts.parse(ARGV)
+
+if file.nil?
+  puts Yaram::Crypto.keygen(bits)
+else
+  file      = File.expand_path(file)
+  path,name = File.split(file)
+  Process.exit if confirm && !agree("save key to #{file}? ")
+  
+  FileUtils.mkdir_p(path) unless File.directory?(path)
+  File.open(file, "w") { |io| io.puts( Yaram::Crypto.keygen(bits) ) }
+end # file.nil?
