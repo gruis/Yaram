@@ -5,7 +5,8 @@ require "yaram/crypto/version"
 # @todo add check and fallback
 require "securerandom"
 # http://rubydoc.info/gems/fast-aes/0.1.1/frames
-# only provides cipher block chaining
+# Only provides electronic codebook cipher block mode - no CBC
+# http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation#Electronic_codebook_.28ECB.29
 require "fast-aes"
 
 module Yaram
