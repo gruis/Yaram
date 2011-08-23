@@ -20,8 +20,6 @@ module Yaram
     class << self
       # [FastAES] the encryptor/decryptor
       attr_writer :aes
-      # [Yaram::Encoder, Marshal, Ox] the object serializer
-      attr_accessor :encoder
       
       # Generates a random key that can be shared by Yaram actors
       # @todo make this better.
