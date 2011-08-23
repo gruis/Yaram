@@ -53,7 +53,7 @@ module Yaram
         end # mode == :file
         
         @encoder, Yaram.encoder = Yaram.encoder, self unless @injected
-        @injected = true
+        @injected               = true
         @aes                    = FastAES.new(key)
         nil
       end # setup(path)
@@ -68,16 +68,17 @@ module Yaram
         # if the message was not encrypted, just return it
         return o unless o.is_a?(::Yaram::Crypto::Message)
         payload = @aes.decrypt(o.payload)
-        raise DecryptionError.new(o.from || "unknown sender") unless payload.slice!(0...13) == "yaram:crypto:"
+        raise DecryptionError.new(o.from || "unknown sender") unless payload.slice!(0...12) == "yaram:crypt:"
         @encoder.load(payload)
       end # load(s)
       
       # Serialize and encrypt an object that can be sent over an insecure
       # channel to a Yaram::Actor.
+      # @todo include the enryption library used in the URN.
       # @param [Object] o
       # @return [String]
       def dump(o)
-        message = ::Yaram::Crypto::Message.new(@aes.encrypt("yaram:crypto:" + @encoder.dump(o)))
+        message = ::Yaram::Crypto::Message.new(@aes.encrypt("yaram:crypt:" + @encoder.dump(o)))
         # how does Yaram::Actor know to respond when the decryption fails?
         message.from = o.from if o.respond_to?(:from)
         "yaram:crypt:" + @encoder.dump(message)
