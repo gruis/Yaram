@@ -81,6 +81,9 @@ module Yaram
         # Dump an object using Marshal and prefix it with a URN.
         # @param [Object] o
         # @todo determine version of Marshal being used and include it in the URN.
+        #         str = Marshal.dump("a marshalled message has a major and minor version")
+        #         str[0].ord     #=> 4
+        #         str[1].ord     #=> 8
         def dump(o)
           "yaram:mrshl:" + super(o)
         end
