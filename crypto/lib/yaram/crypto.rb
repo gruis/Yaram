@@ -11,7 +11,7 @@ require "fast-aes"
 
 module Yaram
   # Decryption was not successful - the shared key is probably not the same.
-  class DecryptionError < ::Yaram::StandardError; end
+  class DecryptionError < ::Yaram::EncodingError; end
 
   # Provides encryption all message attributes except the from attribute.
   module Crypto
@@ -29,6 +29,7 @@ module Yaram
         bytes = bits / 8
         return SecureRandom.base64(bytes)[0...bytes]
       end # keygen
+      alias :genkey :keygen
       
       # Setup the Crypto module by loading the shared key from the given path.
       # If setup is not called then this process and the processes that it spawns will
@@ -38,11 +39,22 @@ module Yaram
       # automatically.
       #
       # @param [String] path full path to the file that contains the shared key.
+      # @param [Symbol] mode (:file) or :string
       # @return [nil]
-      def setup(path)
-        raise LoadError, "''#{path}' does not exist" unless File.exists?(path)
-        @encoder, Yaram.encoder = Yaram.encoder, self
-        @aes                    = FastAES.new(IO.read(path).chomp)
+      def setup(path, mode = :file)
+        if mode == :file
+          raise LoadError, "''#{path}' does not exist" unless File.exists?(path)
+          key = IO.read(path).chomp
+        elsif mode == :string
+          raise ArgumentError.new("'#{path}' must be a String when mode is :string") unless path.is_a?(String)
+          key = path
+        else
+          raise ArgumentError, "'#{mode}' is not a supported setup mode"
+        end # mode == :file
+        
+        @encoder, Yaram.encoder = Yaram.encoder, self unless @injected
+        @injected = true
+        @aes                    = FastAES.new(key)
         nil
       end # setup(path)
       
@@ -50,12 +62,14 @@ module Yaram
       # @param [String] m
       # @return [Object]
       def load(m)
-        o = @encoder.load(m)
+        header, body = m[0..11], m[12..-1]
+        raise EncodingError.new(header) unless header == "yaram:crypt:"
+        o = @encoder.load(body)
         # if the message was not encrypted, just return it
         return o unless o.is_a?(::Yaram::Crypto::Message)
         payload = @aes.decrypt(o.payload)
-        raise DecryptionError.new(o.from || "unknown sender") unless payload[0...13] == "yaram:crypto:"
-        @encoder.load(payload[13..-1])
+        raise DecryptionError.new(o.from || "unknown sender") unless payload.slice!(0...13) == "yaram:crypto:"
+        @encoder.load(payload)
       end # load(s)
       
       # Serialize and encrypt an object that can be sent over an insecure
@@ -66,7 +80,7 @@ module Yaram
         message = ::Yaram::Crypto::Message.new(@aes.encrypt("yaram:crypto:" + @encoder.dump(o)))
         # how does Yaram::Actor know to respond when the decryption fails?
         message.from = o.from if o.respond_to?(:from)
-        @encoder.dump(message)
+        "yaram:crypt:" + @encoder.dump(message)
       end # dump(o)
       
     end # << self

@@ -27,4 +27,6 @@ module Yaram
   # A message that was receive from a third-party broker could not be 
   # properly parsed.
   class ParseError < StandardError; end
+  
+  class EncodingError < StandardError; end
 end # module::Yaram
