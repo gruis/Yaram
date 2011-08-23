@@ -15,6 +15,8 @@ module Yaram
 
   # Provides encryption all message attributes except the from attribute.
   module Crypto
+    extend Encoder
+    
     class << self
       # [FastAES] the encryptor/decryptor
       attr_writer :aes
@@ -51,9 +53,6 @@ module Yaram
         else
           raise ArgumentError, "'#{mode}' is not a supported setup mode"
         end # mode == :file
-        
-        @encoder, Yaram.encoder = Yaram.encoder, self unless @injected
-        @injected               = true
         @aes                    = FastAES.new(key)
         nil
       end # setup(path)
@@ -88,6 +87,7 @@ module Yaram
     
     if File.exists?(keyfile = File.expand_path("~/.yaram/key"))
       setup(keyfile)
+      inject
     end
   end # module::Crypto
 end # module::Yaram
