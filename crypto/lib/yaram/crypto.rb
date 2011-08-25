@@ -16,6 +16,7 @@ module Yaram
   # Provides encryption all message attributes except the from attribute.
   module Crypto
     extend Encoder
+    no_auto_inject
     
     class << self
       # [FastAES] the encryptor/decryptor

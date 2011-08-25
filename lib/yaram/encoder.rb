@@ -14,6 +14,8 @@ module Yaram
   # @see Yaram::Crypto#dump
   # @see Yaram::Crypto#load
   module Encoder
+    # [Yaram::Encoder, Marshal, Ox] the object serializer
+    attr_accessor :encoder
     
     # Inserts this Encoder into the Yaram encoding chain.
     # Encoders will be called in the reverse order in which
@@ -27,19 +29,42 @@ module Yaram
     #     inject
     #   end
     def inject
-      @encoder, Yaram.encoder  = Yaram.encoder, self unless defined?(@_yaram_encoder_injected)
-      @_yaram_encoder_injected = true
+      return if Yaram::Encoder.injected?(self)
+      @encoder, Yaram.encoder  = Yaram.encoder, self 
+      Yaram::Encoder.injected(self)
     end # inject
     
     def dump(o)
       # by default pass the object to the next encoder in the chain
+      #puts "* #{self}.dump"
       @encoder.dump(o)
     end # dump(o)
     
     def load(s)
+      #puts "* #{self}.load"
       # by default pass the string to the next decoder in the chain
       @encoder.load(s)
     end # load(s)
     
+    class << self
+      def injected?(m)
+        (@injected ||= {})[m]
+      end # injected?(m)
+      
+      def injected(m)
+        (@injected ||= {})[m] = true
+      end # injected(m)
+      
+      def extended(m)
+        return if Yaram::Encoder.injected?(m)
+        @encoder, Yaram.encoder  = Yaram.encoder, m
+        Yaram::Encoder.injected(m)
+      end # extended(m)
+      
+      def no_auto_inject
+        raise NotImplementedError
+      end # no_auto_inject
+      
+    end # << self
   end # module::Encoder
 end # module::Yaram

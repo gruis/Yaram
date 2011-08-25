@@ -9,6 +9,7 @@ end # module::Yaram
 require "yaram/version"
 require "yaram/encoder"
 require "yaram/generic-encoder"
+require "yaram/gzip-encoder"
 require "yaram/ext/yaram"
 require "yaram/error"
 require "yaram/message"
