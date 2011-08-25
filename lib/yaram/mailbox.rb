@@ -10,9 +10,9 @@ require "yaram/mailbox/redis"
 
 module Yaram
   class Mailbox
-    
-    
-    class << self      
+    class << self
+      
+      
       # Prepare IOs for use as a Mailbox
       # @return [IO]
       def prepare(*ios)
@@ -30,7 +30,7 @@ module Yaram
         when String
           uri     = URI.parse(mbox)
           type    = uri.scheme.capitalize
-          raise ArgumentError.new("mailbox '#{type}' type not found").extend(Error) unless const_defined?(type)
+          raise ArgumentError.new("mailbox '#{type}' type not found").extend(Error) unless const_defined?(type, false)
           const_get(type).new(mbox)
         else
           raise ArgumentError, "mailbox '#{mbox}' is not a recognized Yaram::Mailbox, or Yaram::Mailbox class"
@@ -43,6 +43,16 @@ module Yaram
         build(addr).connect(addr)
       end # connect(addr)
       
+      # Inheriting classes are included in Yaram::Mailbox namespace so that build can find them easily.
+      # @todo updated .build and .inherited to store inheritors in a single variable, e.g.,. Hash.
+      def inherited(c)
+        con = c.name.split("::").reverse.find{|p| p != "Mailbox" }
+        raise ConfigurationError("Couldn't determine a mailbox class name from #{c}") if con.nil?
+        con = con.to_sym
+        #raise ConfigurationError("Yaram::Mailbox::#{c} has already been set") if const_defined?(con)
+        return if const_defined?(con, false)
+        const_set(con, c)
+      end # inherited(c)
     end # << self
     
     

@@ -1,0 +1,1 @@
+require "yaram/mongodb"
