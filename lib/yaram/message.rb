@@ -15,16 +15,22 @@ module Yaram
         else
           "#{@@uuid}-#{@@idx += 1}"
         end # block_given?
-      end # newcontext      
+      end # newcontext
+      
+      def json_create(o)
+        new(o["content"], o["context"], o["reply_to"], o["from"], o["to"])
+      end # json_create(o)
     end # << self
     
     attr_accessor :content, :to
     attr_writer :to, :reply_to, :context, :from
     
-    def initialize(content, context = nil, reply_to = nil)
+    def initialize(content, context = nil, reply_to = nil, from = nil, to = nil)
       @content    = content
       @context    = context
       @reply_to   = reply_to
+      @from       = from
+      @to         = to
     end
     
     def reply?
@@ -74,6 +80,19 @@ module Yaram
     def details
       "to: #{to}\n" + "from: #{from}\n" + "reply_to: #{reply_to}\n" + "content: #{content}\n"
     end # details
+    
+    # Convert this message into a Hash that can be serialized into JSON.
+    def to_json(*a)
+      {
+        "json_class" => self.class.name,
+        "to"          => to,
+        "from"        => from,
+        "reply_to"    => reply_to,
+        "context"     => context,
+        "content"     => content
+      }.to_json(*a)
+    end # to_json
+    
   end # class::Message
   Message.gen_context_prefix
 end # module::Yaram

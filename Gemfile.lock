@@ -33,6 +33,7 @@ GEM
     thor (0.14.6)
     uuid (2.3.2)
       macaddr (~> 1.0)
+    yajl-ruby (0.8.3)
     yard (0.7.2)
 
 PLATFORMS
@@ -47,5 +48,6 @@ DEPENDENCIES
   rspec (~> 2.2.0)
   simplecov
   thor
+  yajl-ruby
   yaram!
   yard
