@@ -18,7 +18,7 @@ module Yaram
       end # newcontext      
     end # << self
     
-    attr_accessor :content, :to
+    attr_accessor :content
     attr_writer :to, :reply_to, :context, :from
     
     def initialize(content, context = nil, reply_to = nil)
