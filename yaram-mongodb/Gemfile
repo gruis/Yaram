@@ -4,7 +4,7 @@ source "http://rubygems.org"
 # dependencies specified in the gemspec
 gem "yaram", :path => File.expand_path("../..", __FILE__)
 gem "yaram-mongodb", :path => File.expand_path("..", __FILE__)
-
+gem "ox", "~>1.2.7"
 gemspec
 
 group :test do

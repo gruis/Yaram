@@ -6,11 +6,6 @@ module Yaram::Mongodb::Test
     include Yaram::Actor
     def initialize(start = 0)
       @counter = start
-      # When debugging let's us know how far the object got in its processing.
-      trap("TERM") do
-        puts @counter
-        Process.exit
-      end # 
     end 
     def status
       message("retrieving status ... please wait a moment")
