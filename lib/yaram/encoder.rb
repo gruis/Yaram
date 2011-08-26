@@ -36,12 +36,10 @@ module Yaram
     
     def dump(o)
       # by default pass the object to the next encoder in the chain
-      #puts "* #{self}.dump"
       @encoder.dump(o)
     end # dump(o)
     
     def load(s)
-      #puts "* #{self}.load"
       # by default pass the string to the next decoder in the chain
       @encoder.load(s)
     end # load(s)
@@ -54,16 +52,6 @@ module Yaram
       def injected(m)
         (@injected ||= {})[m] = true
       end # injected(m)
-      
-      def extended(m)
-        return if Yaram::Encoder.injected?(m)
-        @encoder, Yaram.encoder  = Yaram.encoder, m
-        Yaram::Encoder.injected(m)
-      end # extended(m)
-      
-      def no_auto_inject
-        raise NotImplementedError
-      end # no_auto_inject
       
     end # << self
   end # module::Encoder
