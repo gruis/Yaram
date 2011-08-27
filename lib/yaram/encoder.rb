@@ -88,6 +88,15 @@ module Yaram
         @injected = {}
       end # clear_injections
       
+      # Insert an Encoder into the Yaram encoding chain.
+      # Encoders will be called in the reverse order in which
+      # they were injected. The next encoder in the chain will
+      # be assigned assigned to @encoder.
+      #
+      # @example
+      #   Yaram::Encoder.inject(SuperFastEncoder.new)
+      # @example
+      #   Yaram::Encoder.inject(SuperFastEncoderSingleton)
       def inject(m)
         return if Yaram::Encoder.injected?(m)
         raise ArgumentError, "'#{m}' must have a settable encoder attribute" unless [:encoder=,:encoder].all? {|f| m.respond_to?(f) }

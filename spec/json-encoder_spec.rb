@@ -42,6 +42,8 @@ describe "Yaram::Encoder.replace" do
     Yaram.encoder = Yaram::GenericEncoder    
   end #
   
+  # @todo add test for inject raising error when supplied encoder doesn't have a settable encoder attribute
+  
   it "should replace the last encoder (GenericEncoder)" do
     Yaram::Encoder.replace(Yaram::GenericEncoder, Yaram::JsonEncoder)
     Yaram::Encoder.last.should == Yaram::JsonEncoder
