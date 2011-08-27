@@ -1,6 +1,14 @@
 PATH
   remote: .
   specs:
+    yaram-crypto (0.0.0)
+      fast-aes (~> 0.1.1)
+      highline
+      yaram
+
+PATH
+  remote: /Users/caleb/src/yaram
+  specs:
     yaram (0.0.0)
       uuid
 
@@ -8,6 +16,8 @@ GEM
   remote: http://rubygems.org/
   specs:
     diff-lcs (1.1.2)
+    fast-aes (0.1.1)
+    highline (1.6.2)
     macaddr (1.0.0)
     ox (1.2.7)
     rspec (2.2.0)
@@ -18,9 +28,8 @@ GEM
     rspec-expectations (2.6.0)
       diff-lcs (~> 1.1.2)
     rspec-mocks (2.6.0)
-    uuid (2.3.2)
+    uuid (2.3.3)
       macaddr (~> 1.0)
-    yajl-ruby (0.8.3)
 
 PLATFORMS
   ruby
@@ -28,5 +37,5 @@ PLATFORMS
 DEPENDENCIES
   ox (~> 1.2.7)
   rspec (~> 2.2.0)
-  yajl-ruby
   yaram!
+  yaram-crypto!
