@@ -90,8 +90,8 @@ module Yaram
       
       def inject(m)
         return if Yaram::Encoder.injected?(m)
-        encoder, Yaram.encoder  = Yaram.encoder, m
-        m.instance_variable_set(:@encoder, encoder)
+        raise ArgumentError, "'#{m}' must have a settable encoder attribute" unless [:encoder=,:encoder].all? {|f| m.respond_to?(f) }
+        m.encoder, Yaram.encoder  = Yaram.encoder, m
         injected(m)
       end # inject(m)
       
