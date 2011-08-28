@@ -16,6 +16,9 @@ module Yaram
   # Provides encryption all message attributes except the from attribute.
   class Crypto
     include Encoder
+    prefix 'yaram:crypt:'
+    # The Crypto encoder will not serialize objects, it expect strings
+    require_serialization
     # [FastAES] the encryptor/decryptor
     attr_writer :aes
 
@@ -41,33 +44,34 @@ module Yaram
       end # mode == :file
       @aes        = FastAES.new(key)
       @serializer = Yaram::GenericEncoder.new
+      @prefix     = prefix
       nil
     end # initialize(path)
     
     # Turn a potentially encrypted message into an object.
     # @param [String] m
-    # @return [Object]
+    # @return [String] the original serialized object
     def load(m)
       header, body = m[0..11], m[12..-1]
-      raise EncodingError.new(header) unless header == "yaram:crypt:"
+      raise EncodingError.new(header) unless header == @prefix
       o = @serializer.load(body)
       # if the message was not encrypted, just return it
       return o unless o.is_a?(::Yaram::Crypto::Message)
       payload = @aes.decrypt(o.payload)
-      raise DecryptionError.new(o.from || "unknown sender") unless payload.slice!(0...12) == "yaram:crypt:"
-      @serializer.load(payload)
+      raise DecryptionError.new(o.from || "unknown sender") unless payload.slice!(0...12) == @prefix
+      payload
     end # load(s)
     
     # Serialize and encrypt an object that can be sent over an insecure
     # channel to a Yaram::Actor.
     # @todo include the enryption library used in the URN.
-    # @param [Object] o
+    # @param [String] o the serialized object
     # @return [String]
     def dump(o)
-      message = ::Yaram::Crypto::Message.new(@aes.encrypt("yaram:crypt:" + @serializer.dump(o)))
+      message = ::Yaram::Crypto::Message.new(@aes.encrypt(@prefix + o))
       # how does Yaram::Actor know to respond when the decryption fails?
       message.from = o.from if o.respond_to?(:from)
-      "yaram:crypt:" + @serializer.dump(message)
+      @prefix + @serializer.dump(message)
     end # dump(o)
     
     class << self

@@ -66,13 +66,31 @@ module Yaram
         Yaram::Encoder.prefixes[p] = m
         @prefix
       end # prefix(p)
-
+      
       def replaces(old_e, new_e = self)
         (Yaram::Encoder.exclusives[old_e] ||= []).push(new_e)
         (Yaram::Encoder.exclusives[new_e] ||= []).push(old_e)
       end # replaces(old_e, new_e = self)
+      
+      # Specifies that this encoder's dump cannot be called before serialization.
+      def require_serialization(req = true)
+        @require_serialization = req
+      end # after_serialization(after = true)
+      def require_serialization?
+        @require_serialization == true
+      end # require_serialization?
+      
+      # Specifies that this encoder is capable of serializing objects. 
+      # Only serializing encoders can be fist in the encoding chain.
+      def is_a_serializer(serializer = true)
+        self.instance_eval { include(::Yaram::Encoder::Serializer) } if serializer
+      end # is_a_serializer(is = true)
     end # module::ClassMethods
     
+    # A tagging module that marks the includer as an Encoder that can serialize Objects.
+    # Only Serializers can be the first encoder in a Chain.
+    module Serializer
+    end # module::Serializer
     
     
     class Chain
@@ -92,6 +110,7 @@ module Yaram
         rest.each do |type|
           self.add( (type.is_a?(Class) && ![:encoder, :dump, :load ].all?{|m| type.respond_to?(m) }) ? type.new : type )
         end # |chain, type|
+        raise ConfigurationError.new("only serializing encoders can be first (#{@encoders[0]}) in the chain") unless @encoders[0].is_a?(Serializer)
       end # initialize(enc)
 
       def as_urlparam
@@ -103,6 +122,7 @@ module Yaram
         last.encoder = enc
         @encoders    = all
         @decoders    = @encoders.reverse
+        raise ConfigurationError.new("only serializing encoders can be first (#{@encoders[0]}) in the chain") unless @encoders[0].is_a?(Serializer)
         self
       end # add(enc)
       

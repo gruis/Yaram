@@ -29,4 +29,6 @@ module Yaram
   class ParseError < StandardError; end
   
   class EncodingError < StandardError; end
+  
+  class ConfigurationError < StandardError; end
 end # module::Yaram

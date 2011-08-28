@@ -2,6 +2,7 @@
 module Yaram
   class GenericEncoder
     include Encoder
+    is_a_serializer
     
     if (((oxgem = Gem.loaded_specs["ox"]).is_a?(Gem::Specification)) && Gem::Requirement.new("~>1.2.7").satisfied_by?(oxgem.version))
       prefix 'yaram:ox:   '
