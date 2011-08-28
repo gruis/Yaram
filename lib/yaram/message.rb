@@ -81,18 +81,6 @@ module Yaram
       "to: #{to}\n" + "from: #{from}\n" + "reply_to: #{reply_to}\n" + "content: #{content}\n"
     end # details
     
-    # Convert this message into a Hash that can be serialized into JSON.
-    def to_json(*a)
-      {
-        "json_class" => self.class.name,
-        "to"          => to,
-        "from"        => from,
-        "reply_to"    => reply_to,
-        "context"     => context,
-        "content"     => content
-      }.to_json(*a)
-    end # to_json
-    
   end # class::Message
   Message.gen_context_prefix
 end # module::Yaram
