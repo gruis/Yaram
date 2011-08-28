@@ -6,7 +6,6 @@ gem "yaram", :path => File.expand_path("..", __FILE__)
 
 group :default do
   gem "ox", "~>1.2.7"
-  gem "yajl-ruby", :require => "yajl"
 end # :default do 
 
 
