@@ -24,14 +24,16 @@ module Yaram
     # @param [Hash] opts spawn options
     # @option opts [false, String, nil] :log
     # @option opts [Class, String, Yaram::Mailbox] :mailbox the mailbox to bind the actor to
+    # @option opts [Yaram::Encoder, Object] :encoder (Yaram.encoder) the encoder to use
     # @return [String] the address of the actor.
     def spawn(opts = {}, &blk)
       #puts "#{Process.pid} spawn(#{opts})"
       opts  = {:log => nil }.merge(opts.is_a?(Hash) ? opts : {})
       mbox  = Yaram::Mailbox.build(opts[:mailbox]).bind
       @connections ||= Hash.new {|hash,key| hash[key] = Mailbox.connect(key) }
-      @def_to            = []
-      @def_context       = []
+      @encoder     = opts[:encoder] || Yaram.encoder
+      @def_to      = []
+      @def_context = []
       
       #puts "#{Process.pid} mbox: #{mbox}"
 
@@ -70,7 +72,8 @@ module Yaram
         end # begin
       end # at_exit
       
-      mbox.unbind
+      addr = mbox.unbind
+      (addr.include?("?") ? addr : addr + "?") + "#{@encoder.as_urlparam}"
     end # spawn(opts = {})
     
     

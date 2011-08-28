@@ -1,10 +1,14 @@
 module Yaram
   module Actor
-    class Proxy      
-      include Yaram::Actor      
-
+    class Proxy
+      include Yaram::Actor
+      
       attr_reader :outbox
-
+      
+      # Creates a connection to an actor allowing method calls
+      # to the Proxy to be passed to the actor.
+      # @param [String] addr the address of the actor
+      # @todo support custom encoder chains
       def initialize(addr)
         @connections ||= Hash.new {|hash,key| hash[key] = Mailbox.connect(key) }
         @connections[addr] = Mailbox.connect(addr)

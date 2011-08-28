@@ -1,19 +1,17 @@
 module Yaram
-  module JsonEncoder
-    extend Encoder
-    replace(GenericEncoder)
+  class JsonEncoder
+    include Encoder
+    prefix 'yaram:json: '
+    replaces GenericEncoder
     
-    class << self
-      def dump(o)
-        "yaram:json: " + Yajl.dump(o)
-      end # dump(o)
-      
-      def load(json)
-        header,body = json[0..11], json[12..-1]
-        raise EncodingError.new(header) unless header == "yaram:json: "
-        Yajl.load(body)
-      end # load(json)
-      
-    end # << self
-  end # module::JsonEncoder
+    def dump(o)
+      @prefix + Yajl.dump(o)
+    end # dump(o)
+    
+    def load(json)
+      header,body = json[0..11], json[12..-1]
+      raise EncodingError.new(header) unless header == @prefix
+      Yajl.load(body)
+    end # load(json)
+  end # class::JsonEncoder
 end # module::Yaram

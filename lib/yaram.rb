@@ -1,12 +1,11 @@
 require "thread" # why?
 
 module Yaram
-  class << self
-    attr_reader :encoder
-    def encoder=(enc)
-      @encoder = enc
-      Yaram::Encoder.clear_injections
-    end # encoder=(enc)
+  class << self 
+    attr_writer :encoder
+    def encoder
+      @encoder ||= Yaram::Encoder::Chain.new(Yaram::GenericEncoder)
+    end # encoder
   end # << self
 end # module::Yaram
 

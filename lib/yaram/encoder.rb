@@ -16,105 +16,133 @@ module Yaram
   module Encoder
     # [Yaram::Encoder, Marshal, Ox] the object serializer
     attr_accessor :encoder
-    
-    # Inserts this Encoder into the Yaram encoding chain.
-    # Encoders will be called in the reverse order in which
-    # they were injected. The next encoder in the chain will
-    # be assigned assigned to @encoder.
-    #
-    # @example
-    #   module Crypto
-    #     extend ::Yaram::Encoder
-    #     ...
-    #     inject
-    #   end
-    def inject
-      return if Yaram::Encoder.injected?(self)
-      @encoder, Yaram.encoder  = Yaram.encoder, self
-      Yaram::Encoder.injected(self)
-    end # inject
-    
-    # Replaces one encoder module in the Yaram encoding chain.
-    # @example
-    #     module JsonEncoder
-    #       extend ::Yaram::Encoder
-    #       replace(Yaram::GenericEncoder)
-    #       ...
-    #     end
-    # @see Yaram::Encoder.replace
-    def replace(old_e, new_e = self)
-      Yaram::Encoder.replace(old_e, new_e)
-    end # replace(old, new = nil)
+    def initialize
+      @prefix = self.class.prefix
+    end # initialize
     
     def dump(o)
-      # by default pass the object to the next encoder in the chain
-      @encoder.dump(o)
-    end # dump(o)
+      raise NotImplementedError
+    end # dump
     
     def load(s)
-      # by default pass the string to the next decoder in the chain
-      @encoder.load(s)
+      raise NotImplementedError
     end # load(s)
     
+    def prefix
+      self.class.prefix
+    end # prefix
     
     class << self
+      def included(c)
+        c.extend(ClassMethods)
+      end # included(c)
+      
+      def prefixes
+        @prefixes ||= {}
+      end # prefixes
+
+      def exclusives
+        @exclusives ||= {}
+      end # exclusives
+      def encoders
+        @encoders ||= {}
+      end # encoders
+      
+      # Creates a new chain of encoders that can be used in place of the standard chain.
+      # @todo register chains for reuse
+      # @todo ensure that encoders that are exclusive of each other cannot be used in the same chain
+      def newchain(*args)
+        Chain.new(*args)
+      end # newchain(*types)
+    end # << self
+    
+    module ClassMethods
+      # Register a prefix string for an encoder
+      # @param [String] p the prefix - 12 characters
+      # @param [Module, Object] m the encoder
+      def prefix(p = nil, m = self)
+        return @prefix if p.nil?
+        @prefix = p
+        Yaram::Encoder.prefixes[p] = m
+        @prefix
+      end # prefix(p)
+
+      def replaces(old_e, new_e = self)
+        (Yaram::Encoder.exclusives[old_e] ||= []).push(new_e)
+        (Yaram::Encoder.exclusives[new_e] ||= []).push(old_e)
+      end # replaces(old_e, new_e = self)
+    end # module::ClassMethods
+    
+    
+    
+    class Chain
       include Enumerable
       
-      # Replaces one encoder module in the Yaram encoding chaing
-      # with another. Use replace when you want to substitute
-      # the generic encoder with another.
-      # @param [Module, Object] old_e the encoder to replace
-      # @param [Module, Object] new_e the encoder to use instead of old_e
-      # @example
-      #     Yaram::Encoder.replace(Yaram::GenricEncoder, SuperSpecialEncoder.new)
-      def replace(old_e, new_e)
-        if Yaram.encoder == old_e
-          new_e.encoder = Yaram.encoder.encoder
-          Yaram.encoder = new_e
-        end # Yaram.encoder == old_e
+      attr_accessor :encoder
+      
+      def initialize(head, *rest)
+        head, *rest = head.split(",").map{|s| Yaram::Encoder.prefixes[s] } if head.is_a?(String)
+        enc = (head.is_a?(Class) && ![:encoder, :dump, :load ].all?{|m| head.respond_to?(m) }) ? head.new : head
+        raise "#{enc.inspect} must respond to #{self.class.api_methods}; missing: #{self.class.missing_api_methods(enc)}" unless self.class.missing_api_methods(enc).empty?        
+        
+        @encoder  = enc
+        @encoders = all
+        @decoders = @encoders.reverse
+        
+        rest.each do |type|
+          self.add( (type.is_a?(Class) && ![:encoder, :dump, :load ].all?{|m| type.respond_to?(m) }) ? type.new : type )
+        end # |chain, type|
+      end # initialize(enc)
 
-        e = Yaram
+      def as_urlparam
+        "encoder=#{all.map{|e| URI.encode(e.prefix) }.join(",")}"
+      end # as_urlparam
+
+      def add(enc)
+        raise "#{enc.inspect} must respond to #{self.class.api_methods}; missing: #{self.class.missing_api_methods(enc)}" unless self.class.missing_api_methods(enc).empty?
+        last.encoder = enc
+        @encoders    = all
+        @decoders    = @encoders.reverse
+        self
+      end # add(enc)
+      
+      def dump(o)
+        encoded = o
+        @encoders.each { |enc| encoded = enc.dump(encoded) }
+        encoded
+      end # dump(o)
+      
+      def load(s)
+        decoded = s
+        @decoders.each { |dec| decoded = dec.load(decoded) }
+        decoded
+      end # load(s)
+      
+      def replace(old_e, new_e)
+        new_e = new_e.new if (new_e.is_a?(Class) && ![:encoder, :dump, :load ].all?{|m| new_e.respond_to?(m) })
+        
+        if @encoder.prefix == old_e.prefix
+          new_e.encoder = @encoder.encoder
+          @encoder      = new_e
+        end # @encoder == old_e
+        
+        e = @encoder
         while !e.encoder.nil?
           e = e.encoder.tap do
-                if e.encoder == old_e
+                if e.encoder.prefix == old_e.prefix
                   new_e.encoder = e.encoder.encoder
                   e.encoder     = new_e 
                 end # e.encoder == old_e
               end # tap
         end # !e.encoder.nil?
+        
+        @encoders = all
+        @decoders = @encoders.reverse
       end # replace(old_e, new_e)
-      
-      def clear_injections
-        @injected = {}
-      end # clear_injections
-      
-      # Insert an Encoder into the Yaram encoding chain.
-      # Encoders will be called in the reverse order in which
-      # they were injected. The next encoder in the chain will
-      # be assigned assigned to @encoder.
-      #
-      # @example
-      #   Yaram::Encoder.inject(SuperFastEncoder.new)
-      # @example
-      #   Yaram::Encoder.inject(SuperFastEncoderSingleton)
-      def inject(m)
-        return if Yaram::Encoder.injected?(m)
-        raise ArgumentError, "'#{m}' must have a settable encoder attribute" unless [:encoder=,:encoder].all? {|f| m.respond_to?(f) }
-        m.encoder, Yaram.encoder  = Yaram.encoder, m
-        injected(m)
-      end # inject(m)
-      
-      def injected?(m)
-        (@injected ||= {})[m]
-      end # injected?(m)
-      
-      def injected(m)
-        (@injected ||= {})[m] = true
-      end # injected(m)
       
       def all
         encs = []
-        e = Yaram.encoder
+        e    = @encoder
         while !e.nil? && e.respond_to?(:encoder)
           encs.push(e)
           e = e.encoder
@@ -122,15 +150,36 @@ module Yaram
         encs        
       end # all
       
-      def last
-        all[-1]
-      end # last
-      
-      # Yields each encoder in the Yaram encoding chain.
+      # Yields each encoder in the chain.
       def each
         block_given? ? all.each {|e| yield e } : all
       end # each
       
-    end # << self
+      def last
+        @encoders[-1]
+      end # last
+      
+      def first
+        @encoders[0]
+      end # first
+      
+      def [](idx)
+        @encoders[idx]
+      end # [](idx)
+      
+      class << self
+        def from_urlparam(p)
+          new(URI.decode(p).split("encoder=")[-1].split("&",2)[0])
+        end # from_urlparam
+
+        def api_methods
+          [:encoder, :dump, :load]
+        end # api_methods
+        def missing_api_methods(enc)
+          [:encoder, :dump, :load ].reject{|m| enc.respond_to?(m) }
+        end # missing_api_methods
+      end # << self
+    end # class::Chain
+
   end # module::Encoder
 end # module::Yaram
