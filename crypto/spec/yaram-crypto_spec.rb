@@ -26,23 +26,26 @@ describe Yaram::Crypto do
   
   describe "encoder" do
     before :all do
-      Yaram::Crypto.setup(Yaram::Crypto.keygen(256), :string)
+      #Yaram::Crypto.setup(Yaram::Crypto.keygen(256), :string)
     end # 
     
     it "should encode and decode objects" do
-      msg = Yaram::Message.new("this is a super secret message")
-      (enc = Yaram::Crypto.dump(msg)).should_not == msg
-      expect { m = Yaram::Crypto.load(enc) }.to_not raise_error(Yaram::EncodingError)
-      Yaram::Crypto.load(enc).should be_a(Yaram::Message)
-      Yaram::Crypto.load(enc).content.should == msg.content
+      crypto     = Yaram::Crypto.new(Yaram::Crypto.keygen(256), :string)
+      msg        = Yaram::Message.new("this is a super secret message")
+      (enc       = crypto.dump(msg)).should_not == msg
+      expect { m = crypto.load(enc) }.to_not raise_error(Yaram::EncodingError)
+      crypto.load(enc).should be_a(Yaram::Message)
+      crypto.load(enc).content.should == msg.content
     end # should encode and decode objects
     
     it "should produce messages that the default Yaram encoder can deal with" do
-      msg = Yaram::Message.new("this is a super secret message")
-      enc = Yaram::Crypto.dump(msg)
-      expect { Yaram::Crypto.encoder.load(enc) }.to raise_error(Yaram::EncodingError)
+      crypto = Yaram::Crypto.new(Yaram::Crypto.keygen(256), :string)
+      msg    = Yaram::Message.new("this is a super secret message")
+      enc    = crypto.dump(msg)
+      genencoder = Yaram::Encoder::Chain.new(Yaram::GenericEncoder)
+      expect { genencoder.load(enc) }.to raise_error(Yaram::EncodingError)
       begin
-        Yaram::Crypto.encoder.load(enc)
+        genencoder.load(enc)
       rescue Yaram::EncodingError => e
         e.message.should == "yaram:crypt:"
       end # begin

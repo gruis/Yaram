@@ -1,5 +1,5 @@
 module Yaram
-  module Crypto
+  class Crypto
     VERSION = "0.0.0"
-  end # module::Crypto
+  end # class::Crypto
 end # module::Yaram

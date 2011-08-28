@@ -1,5 +1,5 @@
 module Yaram
-  module Crypto
+  class Crypto
     class Message
       
       # the content of the message
@@ -15,5 +15,5 @@ module Yaram
       end
       
     end # class::Message
-  end # module::Crypto
+  end # class::Crypto
 end # module::Yaram
